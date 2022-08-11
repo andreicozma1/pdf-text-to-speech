@@ -10,24 +10,9 @@ import re
 
 print("=" * 80)
 print("# PDF Text To Speech")
+
+# Setting up configuration
 filename = "./pdf-sample.pdf"
-output_filename = os.path.basename(filename).split('.')[0]
-
-sim_author_ex = ["Yana Dimova",
-                 "Victor Le Pochat",
-                 "Gertjan Franken",
-                 "Yana Dimova, Gertjan Franken, Victor Le Pochat, Wouter Joosen, and Lieven Desmet"]
-
-
-sim_ref_ex = ["[91] Gerrit Vandendriessche and Louis-Dorsan Jolly. 2016. Belgium: Facebook Not to Tracking Non-Facebook Subscribers. Computer Law Review International, 17, 2, 57–60. doi: 10.9785/cri-2016-0206.",
-              "[47] Arjaldo Karaj, Sam Macbeth, Rémi Berson, and Josep M. Pujol. 2018. Who- Tracks.Me: Shedding light on the opaque world of online tracking. (2018). arXiv: 1804.08959. doi: 10.48550/arXiv.1804.08959.",
-              "[42] Philip Hausner and Michael Gertz. 2021.",
-              "[62] Dave O’Reilly. 2011."
-              "[54] Bin Liu, Anmol Sheth, Udi Weinsberg, Jaideep Chandrashekar, and Ramesh Govindan. 2013."]
-
-sim_other_ex = [
-    "Wouter Joosen imec-DistriNet, KU Leuven Leuven, Belgium wouter.joosen@kuleuven.be"
-]
 
 start_sequence = 0
 speaking_rate = 1.5
@@ -41,6 +26,53 @@ skip_parentheses = False
 ssml_gender = texttospeech.SsmlVoiceGender.MALE
 audio_encoding = texttospeech.AudioEncoding.LINEAR16
 
+# Setting up filters
+filter_authors_path = os.path.join("filters", "authors")
+sim_author_ex = []
+if os.path.isfile(filter_authors_path):
+    with open(filter_authors_path, "r") as f:
+        lines = f.readlines()
+        for line in [line.strip() for line in lines]:
+            sim_author_ex.append(line)
+else:
+    # create file
+    with open(filter_authors_path, "w") as f:
+        pass
+
+filter_authors_path = os.path.join("filters", "references")
+sim_ref_ex = []
+if os.path.isfile(filter_authors_path):
+    with open(filter_authors_path, "r") as f:
+        lines = f.readlines()
+        for line in [line.strip() for line in lines]:
+            sim_ref_ex.append(line)
+else:
+    # create file
+    with open(filter_authors_path, "w") as f:
+        pass
+
+filter_authors_path = os.path.join("filters", "custom")
+sim_custom_ex = []
+if os.path.isfile(filter_authors_path):
+    with open(filter_authors_path, "r") as f:
+        lines = f.readlines()
+        for line in [line.strip() for line in lines]:
+            sim_custom_ex.append(line)
+else:
+    # create file
+    with open(filter_authors_path, "w") as f:
+        pass
+
+# Validation of configuration options
+if speaking_rate < 0.25 or speaking_rate > 4.0:
+    raise Exception("Invalid speaking rate, must be between 0.25 and 4.0")
+
+if pitch < -20 or pitch > 20:
+    raise Exception("Invalid pitch, must be between -20 and 20")
+
+###
+output_filename = os.path.basename(filename).split('.')[0]
+
 removals_author = []
 removals_ref = []
 removals_custom = []
@@ -50,19 +82,13 @@ removals_parentheses = []
 removals_brackets = []
 removals_braces = []
 
-if speaking_rate < 0.25 or speaking_rate > 4.0:
-    raise Exception("Invalid speaking rate, must be between 0.25 and 4.0")
-
-if pitch < -20 or pitch > 20:
-    raise Exception("Invalid pitch, must be between -20 and 20")
-
 def filter(text):
     text = text.replace("\n", " ").strip()
     shouldAdd = True
 
     sim_author = difflib.get_close_matches(text, sim_author_ex, cutoff=0.4)
     sim_ref = difflib.get_close_matches(text, sim_ref_ex, cutoff=0.005)
-    sim_custom = difflib.get_close_matches(text, sim_other_ex, cutoff=0.4)
+    sim_custom = difflib.get_close_matches(text, sim_custom_ex, cutoff=0.4)
 
     if (len(text.split()) <= 4 and len(sim_author) > 0):
         removals_author.append(text)
