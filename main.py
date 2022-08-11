@@ -2,6 +2,7 @@ import difflib
 import io
 import os
 import pickle
+import sys
 import fitz
 from google.cloud import texttospeech
 import simpleaudio as sa
@@ -243,17 +244,21 @@ audio_config = texttospeech.AudioConfig(
 if start_sequence >= len(text_list_audio):
     raise Exception(f"Start sequence is greater than total number of text sequences: {start_sequence} > {len(text_list_audio)}")
     
-for i in range(start_sequence, len(text_list_audio)):
-    text, audio = text_list_audio[i]
-    is_audio_available = audio is not None
-    print(f"{'(' if not is_audio_available else '['}{i+1}/{len(text_list_audio)}{')' if not is_audio_available else ']'} {text}")
-    if audio is None:
-        synthesis_input = texttospeech.SynthesisInput(text=text)
-        audio = client.synthesize_speech(input=synthesis_input, voice=voice, audio_config=audio_config).audio_content
-        # Save updated cache to file
-        text_list_audio[i] = (text, audio)
-        with open(filename_pickle, "wb") as f:
-            pickle.dump(text_list_audio, f)
-        
-    play_obj = sa.WaveObject.from_wave_file(io.BytesIO(audio)).play()
-    play_obj.wait_done()
+try:
+    for i in range(start_sequence, len(text_list_audio)):
+        text, audio = text_list_audio[i]
+        is_audio_available = audio is not None
+        print(f"{'(' if not is_audio_available else '['}{i+1}/{len(text_list_audio)}{')' if not is_audio_available else ']'} {text}")
+        if audio is None:
+            synthesis_input = texttospeech.SynthesisInput(text=text)
+            audio = client.synthesize_speech(input=synthesis_input, voice=voice, audio_config=audio_config).audio_content
+            # Save updated cache to file
+            text_list_audio[i] = (text, audio)
+            with open(filename_pickle, "wb") as f:
+                pickle.dump(text_list_audio, f)
+            
+        play_obj = sa.WaveObject.from_wave_file(io.BytesIO(audio)).play()
+        play_obj.wait_done()
+except KeyboardInterrupt:
+    print("\n\nKeyboard interrupt detected. Exiting...")
+    sys.exit()
