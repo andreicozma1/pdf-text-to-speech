@@ -22,7 +22,7 @@ flask run
 - Go to: http://localhost:5000/
 - Upload a PDF file (ex: `pdf-sample.pdf` in the root of this repository)
 - Process the file by clicking the `Process` button
-- Use the `Prev` and `Next` buttons to navigate through the sentences
+- Press `Prev` (or `Left Arrow` button) or `Next` (or `Right Arrow` button) to navigate through the sentences
 - Press `Play` or the `SPACE` button to listen to the audio, automatically progressing to the next sentence
 - You can also click on any sentence to navigate to it
   
