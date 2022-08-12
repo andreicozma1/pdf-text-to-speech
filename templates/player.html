@@ -53,7 +53,7 @@
       <p>ID: {{id}}</p>
       <p>Pages: {{data.num_pages}}</p>
       <p>Is Encrypted?: {{data.is_encrypted}}</p>
-      <p>Is Password Proceted?: {{data.is_password_protected}}</p>
+      <p>Is Password Protected?: {{data.is_password_protected}}</p>
       <p>Is processed?: {{data.is_processed}}</p>
 
       <div>
@@ -72,7 +72,7 @@
       <div id="controlsBox">
         <p id="progressText"></p>
         <button onclick="prev()">Prev</button>
-        <button onclick="toggle_play(this)" id="btn_play">Play</button>
+        <button onclick="toggle_play()" id="btn_play">Play</button>
         <button onclick="next()">Next</button>
         <input
           type="range"
@@ -87,11 +87,7 @@
 
       <p id="currentText"></p>
 
-      <audio
-        src=""
-        type="audio/wav"
-        id="audio_source"
-      >
+      <audio src="" type="audio/wav" id="audio_source">
         Your browser does not support the audio element.
       </audio>
     </div>
@@ -138,18 +134,6 @@
         return parser.href;
       }
 
-      function toggle_play(element){
-        if(audio_source.paused){
-          console.log("Playing...");
-          load_current_index();
-          audio_source.play();
-          element.innerText = "Pause";
-        }else{
-          console.log("Pausing...");
-          audio_source.pause();
-          element.innerText = "Play";
-        }
-      }
 
       let btn_process = document.getElementById("btn_process");
       btn_process.disabled = data.is_processed === true;
@@ -162,6 +146,21 @@
 
       let controls_box = document.getElementById("controlsBox");
       controls_box.hidden = data.is_processed === false;
+
+      let btn_play = document.getElementById("btn_play");
+
+      function toggle_play(){
+        if(audio_source.paused){
+          console.log("Playing...");
+          load_current_index();
+          audio_source.play();
+          btn_play.innerText = "Pause";
+        }else{
+          console.log("Pausing...");
+          audio_source.pause();
+          btn_play.innerText = "Play";
+        }
+      }
 
       let audio_index = 0
 
@@ -206,7 +205,7 @@
         if (index < 0) {
           index = data.text_list.length - 1;
         }
-        
+
         if (index > data.text_list.length - 1) {
           index = 0
         }
@@ -243,6 +242,27 @@
 
       function prev(){
         seek_to_index(audio_index - 1, false);
+      }
+
+      document.body.onkeyup = function(e) {
+        if (e.key == " " ||
+            e.code == "Space" ||
+            e.keyCode == 32
+        ) {
+          toggle_play()
+        }
+        if (e.key == "ArrowRight" ||
+            e.code == "ArrowRight" ||
+            e.keyCode == 39
+        ) {
+          next()
+        }
+        if (e.key == "ArrowLeft" ||
+            e.code == "ArrowLeft" ||
+            e.keyCode == 37
+        ) {
+          prev()
+        }
       }
 
       audio_source.addEventListener('ended', function(ev){

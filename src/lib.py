@@ -23,11 +23,9 @@ class PDF_TTS:
         self.output_filepath_txt = f"{output_filepath}.txt"
         self.output_filepath_pkl = f"{output_filepath}.pkl"
 
-        self.start_sequence = 0
-        self.language_code = "en-US"
-
         self.speaking_rate = 1
         self.pitch = 0.0
+        self.language_code = "en-US"
 
         # Validation of configuration options
         if self.speaking_rate < 0.25 or self.speaking_rate > 4.0:
@@ -36,6 +34,7 @@ class PDF_TTS:
 
         if self.pitch < -20 or self.pitch > 20:
             raise Exception("Invalid pitch, must be between -20 and 20")
+
 
         self.skip_brackets = True
         self.skip_braces = True
@@ -59,7 +58,17 @@ class PDF_TTS:
         )
        
         self.filters_folder = "./filters"
-        self.filters = {}
+        self.filters = {
+            'authors': {
+                'cutoff': 0.4,
+            },
+            'references': {
+                'cutoff': 0.05,
+            },
+            'custom': {
+                'cutoff': 0.4,
+            }
+        }
         self.removals = {}
 
         self.doc = self.setup(filename)
@@ -68,9 +77,8 @@ class PDF_TTS:
 
     def setup(self, filename):
         # Setting up filters
-        self.load_create_filter('authors')
-        self.load_create_filter('references')
-        self.load_create_filter('custom')
+        for filter_name in self.filters:
+            self.load_create_filter(filter_name)
         # Setting up removals
         self.removals['other'] = []
         self.removals['parentheses'] = []
@@ -80,12 +88,13 @@ class PDF_TTS:
 
     def load_create_filter(self, name):
         filter_authors_path = os.path.join(self.filters_folder, name)
-        self.filters[name] = []
+        self.filters[name]['items'] = []
         if os.path.isfile(filter_authors_path):
             with open(filter_authors_path, "r") as f:
-                lines = f.readlines()
-                for line in [line.strip() for line in lines]:
-                    self.filters[name].append(line)
+                lines = [line.strip() for line in f.readlines()]
+                for line in lines:
+                    if line != "":
+                        self.filters[name]['items'].append(line)
         else:
             # create file
             with open(filter_authors_path, "w") as f:
@@ -108,11 +117,11 @@ class PDF_TTS:
             text = re.sub("\{.*?\}", "", text)
             
         sim_author = difflib.get_close_matches(
-            text, self.filters['authors'], cutoff=0.4)
+            text, self.filters['authors'], cutoff=self.filters['authors']['cutoff'])
         sim_ref = difflib.get_close_matches(
-            text, self.filters['references'], cutoff=0.005)
+            text, self.filters['references'], cutoff=self.filters['references']['cutoff'])
         sim_custom = difflib.get_close_matches(
-            text, self.filters['custom'], cutoff=0.4)
+            text, self.filters['custom'], cutoff=self.filters['custom']['cutoff'])
         
         shouldAdd = True
         if (len(text.split()) <= 4 and len(sim_author) > 0):
