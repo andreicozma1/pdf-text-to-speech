@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PDF TTS</title>
+    <style>
+      div {
+        margin: 1em;
+      }
+
+      p,
+      a {
+        font-size: 1.2em;
+      }
+      audio {
+        width: 80%;
+      }
+      a:hover,
+      a:active {
+        color: #00f;
+        cursor: pointer;
+      }
+      .center {
+        text-align: center;
+      }
+
+      #textbox {
+        margin: 2em;
+      }
+
+      .slider {
+        display: block;
+        width: 80%;
+        margin: 1em auto;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="center">
+      <h1>PDF Text-To-Speech</h1>
+
+      <hr class="dashed" />
+
+      <p>ID: {{id}}</p>
+      <p>Pages: {{data.num_pages}}</p>
+      <p>Is Encrypted?: {{data.is_encrypted}}</p>
+      <p>Is Password Proceted?: {{data.is_password_protected}}</p>
+      <p>Is processed?: {{data.is_processed}}</p>
+
+      <div>
+        <button onclick="process()" id="btn_process">Process</button>
+        <button onclick="clean()" id="btn_clean">Clean</button>
+        <button onclick="download_pdf()" id="btn_download_pdf">
+          Download PDF
+        </button>
+        <button onclick="download_txt()" id="btn_download_txt">
+          Download TXT
+        </button>
+      </div>
+
+      <hr class="dashed" />
+
+      <div id="controlsBox">
+        <p id="progressText"></p>
+        <button onclick="play_prev()">Prev</button>
+        <button onclick="toggle_play(this)" id="btn_play">Play</button>
+        <button onclick="play_next()">Next</button>
+        <input
+          type="range"
+          min="0"
+          step="1"
+          class="slider"
+          id="progressRange"
+          onmouseup="seek_to_index(this.value)"
+          onkeyup="seek_to_index(this.value)"
+        />
+      </div>
+
+      <p id="currentText"></p>
+
+      <audio
+        src=""
+        type="audio/wav"
+        id="audio_source"
+      >
+        Your browser does not support the audio element.
+      </audio>
+    </div>
+
+    <hr class="dashed" />
+
+    <div id="textbox"></div>
+
+    <script>
+      const data = {{data|tojson|safe}}
+      console.log(data)
+
+      function process(){
+        console.log("Processing...");
+        const parser = new URL(window.location);
+        parser.searchParams.set("action", "process");
+        window.location = parser.href;
+      }
+      function clean(){
+        console.log("Cleaning...");
+        const parser = new URL(window.location);
+        parser.searchParams.set("action", "clean");
+        window.location = parser.href;
+      }
+
+      function download_pdf(){
+        console.log("Downloading PDF...");
+        const parser = new URL(window.location);
+        parser.searchParams.set("action", "download_pdf");
+        window.location = parser.href;
+      }
+      function download_txt(){
+        console.log("Downloading TXT...");
+        const parser = new URL(window.location);
+        parser.searchParams.set("action", "download_txt");
+        window.location = parser.href;
+      }
+
+      function get_stream_url(index) {
+        const parser = new URL(window.location);
+        parser.searchParams.set("action", "stream");
+        parser.searchParams.set("index", index);
+        console.log(`Streaming: ${parser.href}`);
+        return parser.href;
+      }
+
+      function toggle_play(element){
+        if(audio_source.paused){
+          console.log("Playing...");
+          load_current_index();
+          audio_source.play();
+          element.innerText = "Pause";
+        }else{
+          console.log("Pausing...");
+          audio_source.pause();
+          element.innerText = "Play";
+        }
+      }
+
+      let btn_process = document.getElementById("btn_process");
+      btn_process.disabled = data.is_processed === true;
+
+      let btn_clean = document.getElementById("btn_clean");
+      btn_clean.disabled = data.is_processed === false;
+
+      let btn_download_txt = document.getElementById("btn_download_txt");
+      btn_download_txt.hidden = data.is_processed === false;
+
+      let controls_box = document.getElementById("controlsBox");
+      controls_box.hidden = data.is_processed === false;
+
+      let audio_index = 0
+
+      let audio_source = document.getElementById("audio_source");
+      audio_source.removeEventListener("loadeddata", () => {});
+
+      audio_source.hidden = data.is_processed === false
+      if (data.is_processed === true) {
+        audio_source.src = get_stream_url(audio_index);
+      }
+
+      let progress_text = document.getElementById("progressText")
+      let progress_range = document.getElementById("progressRange")
+      let current_text = document.getElementById("currentText")
+
+
+      function setProgress() {
+        const text = data.text_list[audio_index]
+
+        console.log(`Setting progress: [${audio_index}] - ${text}`);
+
+        progress_text.innerText = `${audio_index}/${data.text_list.length - 1}`
+        progress_range.value = audio_index
+        current_text.innerText = text
+      }
+
+      function load_current_index(play) {
+        setProgress();
+
+        audio_source.src = get_stream_url(audio_index)
+        audio_source.load();
+        // add event listener for when the audio is loaded
+        // audio_source.addEventListener("loadeddata", () => {
+        //     console.log("Playing...");
+        //     audio_source.play();
+        // }
+      }
+
+      function seek_to_index(index, forward) {
+        if (forward === undefined) {
+          forward = true;
+        }
+
+        index = parseInt(index);
+
+        if (index < 0) {
+          index = data.text_list.length - 1;
+        }
+        
+        if (index > data.text_list.length - 1) {
+          index = 0
+        }
+
+        console.log(`Attempting to seek to: ${index}`);
+        const text = data.text_list[index]
+        // strip out whitespace and newlines
+        const text_stripped = text.replace(/\s/g, "").replace(/\n/g, "")
+        // if there is no text, play the next audio
+        if (text_stripped.length === 0) {
+          if (forward) {
+            seek_to_index(index + 1, forward);
+          } else {
+            seek_to_index(index - 1, forward);
+          }
+          return;
+        }
+
+        audio_index = index
+        console.log("Seeking to: " + audio_index);
+        let autoplay = !audio_source.paused
+        load_current_index();
+        if (autoplay) {
+          audio_source.play();
+        }
+      }
+
+      function play_next() {
+        seek_to_index(audio_index + 1, true);
+      }
+
+      function play_prev(){
+        seek_to_index(audio_index - 1, false);
+      }
+
+      audio_source.addEventListener('ended', function(ev){
+          play_next();
+          audio_source.play();
+      });
+
+      let textbox = document.getElementById("textbox");
+      if (data.text_list.length > 0) {
+        progress_range.max = data.text_list.length - 1;
+        setProgress();
+        // Append link elements to the textbox
+        for (let i = 0; i < data.text_list.length; i++) {
+          const text = data.text_list[i];
+          const link = document.createElement("a");
+          // set padding to prevent text from overlapping
+          link.onclick = function() {
+            seek_to_index(i);
+          };
+          link.innerText = text;
+          textbox.appendChild(link);
+          // textbox.appendChild(document.createElement("br"));
+        }
+      }
+    </script>
+  </body>
+</html>
