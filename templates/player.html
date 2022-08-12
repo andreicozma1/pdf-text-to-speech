@@ -16,9 +16,13 @@
       audio {
         width: 80%;
       }
-      a:hover,
-      a:active {
-        color: #00f;
+      a:hover {
+        color: #7a7aff;
+        cursor: pointer;
+      }
+
+      .active {
+        color: #0000ff;
         cursor: pointer;
       }
       .center {
@@ -33,6 +37,10 @@
         display: block;
         width: 80%;
         margin: 1em auto;
+      }
+
+      #currentText {
+        font-weight: bold;
       }
     </style>
   </head>
@@ -63,9 +71,9 @@
 
       <div id="controlsBox">
         <p id="progressText"></p>
-        <button onclick="play_prev()">Prev</button>
+        <button onclick="prev()">Prev</button>
         <button onclick="toggle_play(this)" id="btn_play">Play</button>
-        <button onclick="play_next()">Next</button>
+        <button onclick="next()">Next</button>
         <input
           type="range"
           min="0"
@@ -169,7 +177,6 @@
       let progress_range = document.getElementById("progressRange")
       let current_text = document.getElementById("currentText")
 
-
       function setProgress() {
         const text = data.text_list[audio_index]
 
@@ -178,18 +185,15 @@
         progress_text.innerText = `${audio_index}/${data.text_list.length - 1}`
         progress_range.value = audio_index
         current_text.innerText = text
+        let active_text = document.getElementById("text_" + audio_index)
+        // add class to active text
+        active_text.classList.add("active")
       }
 
       function load_current_index(play) {
         setProgress();
-
         audio_source.src = get_stream_url(audio_index)
         audio_source.load();
-        // add event listener for when the audio is loaded
-        // audio_source.addEventListener("loadeddata", () => {
-        //     console.log("Playing...");
-        //     audio_source.play();
-        // }
       }
 
       function seek_to_index(index, forward) {
@@ -221,6 +225,9 @@
           return;
         }
 
+        let curr_active = document.getElementById("text_" + audio_index)
+        // remove class from active text
+        curr_active.classList.remove("active")
         audio_index = index
         console.log("Seeking to: " + audio_index);
         let autoplay = !audio_source.paused
@@ -230,23 +237,22 @@
         }
       }
 
-      function play_next() {
+      function next() {
         seek_to_index(audio_index + 1, true);
       }
 
-      function play_prev(){
+      function prev(){
         seek_to_index(audio_index - 1, false);
       }
 
       audio_source.addEventListener('ended', function(ev){
-          play_next();
+          next();
           audio_source.play();
       });
 
       let textbox = document.getElementById("textbox");
       if (data.text_list.length > 0) {
         progress_range.max = data.text_list.length - 1;
-        setProgress();
         // Append link elements to the textbox
         for (let i = 0; i < data.text_list.length; i++) {
           const text = data.text_list[i];
@@ -255,10 +261,12 @@
           link.onclick = function() {
             seek_to_index(i);
           };
+          link.id = "text_" + i;
           link.innerText = text;
           textbox.appendChild(link);
           // textbox.appendChild(document.createElement("br"));
         }
+        setProgress();
       }
     </script>
   </body>

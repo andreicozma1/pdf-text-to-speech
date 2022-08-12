@@ -266,14 +266,12 @@ class PDF_TTS:
 
         audio_io = io.BytesIO(audio)
         data = audio_io.read()
-        # if first_run:
-        #     data = self.wav_header + data
-        #     first_run = False
+        # play_obj = sa.WaveObject.from_wave_file(io.BytesIO(audio))
+        # print(play_obj)
+        # play_obj.play()
+        # play_obj.wait_done()
         return data
-            # play_obj = sa.WaveObject.from_wave_file(io.BytesIO(audio))
-            # print(play_obj)
-            # play_obj.play()
-            # play_obj.wait_done()
+          
 
     def clean(self):
         if os.path.exists(self.output_filepath_txt):
