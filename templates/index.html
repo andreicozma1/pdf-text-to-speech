@@ -2,18 +2,134 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PDF TTS</title>
+    <style>
+      div {
+        margin: 1em;
+      }
+
+      p,
+      a {
+        font-size: 1.2em;
+      }
+
+      audio {
+        width: 80%;
+      }
+
+      a:hover {
+        color: #7a7aff;
+        cursor: pointer;
+      }
+
+      .active {
+        color: #0000ff;
+        cursor: pointer;
+      }
+
+      .center {
+        text-align: center;
+      }
+
+      #textbox {
+        margin: 2em;
+      }
+
+      .slider {
+        display: block;
+        width: 80%;
+        margin: 1em auto;
+      }
+
+      #currentText {
+        font-weight: bold;
+      }
+    </style>
   </head>
   <body>
+    <div class="center">
+      <h1>PDF Text-To-Speech</h1>
+
+      <hr class="dashed" />
+
+      {% if message is defined and message%}
+
+      <p>{{message}}</p>
+      <hr class="dashed" />
+      
+      {% endif %}
+
+      {% if data is defined and data and id is defined and id%}
+
+      <p>ID: {{id}}</p>
+      <p>File Name: {{data.file_name}}</p>
+      <p>Page Count: {{data.page_count}}</p>
+      <p>Has Links?: {{data.has_links}}</p>
+      <p>Has Annotations?: {{data.has_annots}}</p>
+      <p>Is Encrypted?: {{data.is_encrypted}}</p>
+      <p>Is Password Protected?: {{data.is_password_protected}}</p>
+      <p>TOC: {{data.toc}}</p>
+      <p>Is Processed?: {{data.is_processed}}</p>
+
+      <div>
+        <button onclick="process()" id="btn_process">Process</button>
+        <button onclick="clean()" id="btn_clean">Clean</button>
+        <button onclick="download_pdf()" id="btn_download_pdf">
+          Download PDF
+        </button>
+        <button onclick="download_txt()" id="btn_download_txt">
+          Download TXT
+        </button>
+      </div>
+
+      <hr class="dashed" />
+
+      <div id="controlsBox">
+        <p id="progressText"></p>
+        <button onclick="prev()">Prev</button>
+        <button onclick="toggle_play()" id="btn_play">Play</button>
+        <button onclick="next()">Next</button>
+        <input
+          type="range"
+          min="0"
+          step="1"
+          class="slider"
+          id="progressRange"
+          onmouseup="seek_to_index(this.value)"
+          onkeyup="seek_to_index(this.value)"
+        />
+      </div>
+
+      <p id="currentText"></p>
+
+      <audio src="" type="audio/wav" id="audio_source">
+        Your browser does not support the audio element.
+      </audio>
+    </div>
+
+    <hr class="dashed" />
+
+    <div id="textbox"></div>
+
+    <script>
+      const data = {{ data| tojson | safe}}
+      console.log(data)
+    </script>
+    <script src="{{url_for('static', filename='scripts.js')}}"></script>
+
+    {% else %}
+
     <form
       action="http://localhost:5000/upload"
       method="POST"
       enctype="multipart/form-data"
-      style="text-align: center; margin: 5em;"
+      style="text-align: center; margin: 1em"
     >
-      <h1>Welcome to PDF Text to Speech</h1>
       <input type="file" name="file" />
       <input type="submit" />
     </form>
+
+    {% endif %}
   </body>
 </html>

@@ -35,7 +35,6 @@ class PDF_TTS:
         if self.pitch < -20 or self.pitch > 20:
             raise Exception("Invalid pitch, must be between -20 and 20")
 
-
         self.skip_brackets = True
         self.skip_braces = True
         self.skip_parentheses = False
@@ -43,12 +42,13 @@ class PDF_TTS:
         sampleRate = 24000
         bitsPerSample = 16
         channels = 1
-        self.wav_header = self.genWavHeader(sampleRate, bitsPerSample, channels)
+        self.wav_header = self.genWavHeader(
+            sampleRate, bitsPerSample, channels)
         # first_run = True
-        
+
         self.ssml_gender = texttospeech.SsmlVoiceGender.MALE
         self.audio_encoding = texttospeech.AudioEncoding.LINEAR16
-        
+
         self.client = texttospeech.TextToSpeechClient()
         self.voice = texttospeech.VoiceSelectionParams(
             language_code=self.language_code, ssml_gender=self.ssml_gender
@@ -56,7 +56,7 @@ class PDF_TTS:
         self.audio_config = texttospeech.AudioConfig(
             audio_encoding=self.audio_encoding, speaking_rate=self.speaking_rate, pitch=self.pitch
         )
-       
+
         self.filters_folder = "./filters"
         self.filters = {
             'authors': {
@@ -69,7 +69,7 @@ class PDF_TTS:
                 'cutoff': 0.4,
             }
         }
-        self.removals = {}
+        self.removals = None
 
         self.doc = self.setup(filename)
 
@@ -80,12 +80,29 @@ class PDF_TTS:
         for filter_name in self.filters:
             self.load_create_filter(filter_name)
         # Setting up removals
-        self.removals['other'] = []
-        self.removals['parentheses'] = []
-        self.removals['brackets'] = []
-        self.removals['braces'] = []
-        return fitz.open(filename)
 
+        self.removals = {'other': [],
+                         'parentheses': [],
+                         'brackets': [],
+                         'braces': [],
+                         'other': []}
+        # Setting up document
+        return fitz.Document(filename)
+
+    def get_data(self):
+        info = {
+            'file_name': self.doc.name,
+            'page_count': self.doc.page_count,
+            'has_links': self.doc.has_links(),
+            'has_annots': self.doc.has_annots(),
+            'is_encrypted': self.doc.is_encrypted,
+            'is_password_protected': self.doc.needs_pass,
+            'toc': self.doc.get_toc(),
+            'is_processed': self.is_processed(),
+            'text_list': [i[0] for i in self.text_audio_map] if self.text_audio_map else [],
+        }
+        return info
+    
     def load_create_filter(self, name):
         filter_authors_path = os.path.join(self.filters_folder, name)
         self.filters[name]['items'] = []
@@ -115,14 +132,14 @@ class PDF_TTS:
         if self.skip_braces:
             self.removals['braces'].append(text)
             text = re.sub("\{.*?\}", "", text)
-            
+
         sim_author = difflib.get_close_matches(
             text, self.filters['authors'], cutoff=self.filters['authors']['cutoff'])
         sim_ref = difflib.get_close_matches(
             text, self.filters['references'], cutoff=self.filters['references']['cutoff'])
         sim_custom = difflib.get_close_matches(
             text, self.filters['custom'], cutoff=self.filters['custom']['cutoff'])
-        
+
         shouldAdd = True
         if (len(text.split()) <= 4 and len(sim_author) > 0):
             self.removals['authors'].append(text)
@@ -143,7 +160,7 @@ class PDF_TTS:
 
             self.removals['other'].append(text)
             shouldAdd = False
-        
+
         if not shouldAdd:
             return None
         return text
@@ -165,15 +182,7 @@ class PDF_TTS:
     def is_processed(self):
         return self.text_audio_map is not None
 
-    def get_data(self):
-        info = {
-            'is_encrypted': self.doc.is_encrypted,
-            'is_password_protected': self.doc.needs_pass,
-            'is_processed': self.is_processed(),
-            'num_pages': self.doc.page_count,
-            'text_list': [i[0] for i in self.text_audio_map] if self.text_audio_map else [],
-        }
-        return info
+
 
     def process(self):
         print(f"# PROCESSING: {self.output_filename}")
@@ -193,14 +202,14 @@ class PDF_TTS:
                     print("=" * 50)
                     print(txt)
                     print(txt_new)
-                    
+
                     text = " ".join(txt_new.split("\n"))
                     text += "\n\n"
                     text = text.replace("  ", " ")
                     text = text.replace("- ", "")
                     text = text.replace(" , ", ", ")
                     text = text.replace(" .", ".")
-                    
+
                     text_buf.append(text)
 
         with open(self.output_filepath_txt, "w") as f:
@@ -241,17 +250,17 @@ class PDF_TTS:
 
     # def stream(self):
     #     print(f"# PLAYBACK: {self.output_filepath_txt}")
-        
+
     #     # if self.start_sequence >= len(self.text_audio_map):
     #     #     raise Exception(
     #     #         f"Start sequence is greater than total number of text sequences: {self.start_sequence} > {len(self.text_audio_map)}")
 
     #     # CHUNK = 1024
-        
+
     #     for i in range(self.start_sequence, len(self.text_audio_map)):
     #         self.stream_one(i)
-        
-    def stream_one(self, index):    
+
+    def stream_one(self, index):
         if not self.is_processed():
             print(" => File not processed yet. Please run `process()` first.")
             return None
@@ -263,8 +272,8 @@ class PDF_TTS:
         if audio is None:
             synthesis_input = texttospeech.SynthesisInput(text=text)
             audio = self.client.synthesize_speech(input=synthesis_input,
-                                                voice=self.voice,
-                                                audio_config=self.audio_config).audio_content
+                                                  voice=self.voice,
+                                                  audio_config=self.audio_config).audio_content
             # Save updated cache to file
             self.text_audio_map[index] = (text, audio)
             try:
@@ -280,14 +289,13 @@ class PDF_TTS:
         # play_obj.play()
         # play_obj.wait_done()
         return data
-          
 
     def clean(self):
         if os.path.exists(self.output_filepath_txt):
             os.remove(self.output_filepath_txt)
         if os.path.exists(self.output_filepath_pkl):
             os.remove(self.output_filepath_pkl)
-            
+
     def genWavHeader(self, sampleRate, bitsPerSample, channels):
         datasize = 2000*10**6
         # (4byte) Marks file as RIFF
@@ -308,7 +316,8 @@ class PDF_TTS:
         o += (sampleRate).to_bytes(4, 'little')
         o += (sampleRate * channels * bitsPerSample //
               8).to_bytes(4, 'little')  # (4byte)
-        o += (channels * bitsPerSample // 8).to_bytes(2, 'little')               # (2byte)
+        o += (channels * bitsPerSample // 8).to_bytes(2,
+                                                      'little')               # (2byte)
         # (2byte)
         o += (bitsPerSample).to_bytes(2, 'little')
         # (4byte) Data Chunk Marker
