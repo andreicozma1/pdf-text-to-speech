@@ -21,23 +21,6 @@ def allowed_file(filename):
 def index():
     return render_template("./index.html")
 
-@app.route('/download/<upload_id>')
-def download(upload_id):
-    upload_dir_path = os.path.join(app.config['UPLOAD_FOLDER'], upload_id)
-    if not upload_id or not os.path.exists(upload_dir_path):
-        return redirect(url_for('index'))
-    print(f"Downloading: {upload_dir_path}")
-    return send_from_directory(upload_dir_path, "document.pdf", as_attachment=True)
-    
-@app.route("/stream/<upload_id>")
-def streamwav(upload_id):
-    upload_dir_path = os.path.join(app.config['UPLOAD_FOLDER'], upload_id)
-    stream = PDF_TTS(os.path.join(upload_dir_path, 'document.pdf')).stream()
-    if not upload_id or not stream:
-        return redirect(url_for('index'))
-    print(f"Streaming: {upload_dir_path}")
-    return 
-
 @app.route('/<upload_id>')
 def player(upload_id):
     upload_dir_path = os.path.join(app.config['UPLOAD_FOLDER'], upload_id)
