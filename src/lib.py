@@ -8,8 +8,10 @@ import fitz
 from google.cloud import texttospeech
 from tqdm import tqdm
 import re
-import simpleaudio as sa
+# import simpleaudio as sa
 import io
+
+
 # print("=" * 80)
 # print("# PDF Text To Speech")
 
@@ -34,8 +36,7 @@ class PDF_TTS:
 
         # Validation of configuration options
         if self.speaking_rate < 0.25 or self.speaking_rate > 4.0:
-            raise Exception(
-                "Invalid speaking rate, must be between 0.25 and 4.0")
+            raise Exception("Invalid speaking rate, must be between 0.25 and 4.0")
 
         if self.pitch < -20 or self.pitch > 20:
             raise Exception("Invalid pitch, must be between -20 and 20")
@@ -83,8 +84,7 @@ class PDF_TTS:
 
     def setup_doc(self, filename):
         # Setting up removals
-        self.removals = {'other': [],
-                         'parentheses': [],
+        self.removals = {'parentheses': [],
                          'brackets': [],
                          'braces': [],
                          'other': []}
@@ -124,11 +124,10 @@ class PDF_TTS:
                 'toc': self.doc.get_toc(),
             })
 
-        data['info'].update({
-            'file_name': os.path.basename(self.filename),
-            'is_processed': self.is_processed(),
-            'is_open': True if self.doc and not self.doc.is_closed else False,
-        })
+        data['info'].update({'file_name': os.path.basename(self.filename),
+                             'is_processed': self.is_processed(),
+                             'is_open': bool(self.doc and not self.doc.is_closed)})
+
         data.update({
             'text_list': [i[0] for i in self.text_audio_map] if self.text_audio_map else [],
             'removals': self.removals,
@@ -141,18 +140,22 @@ class PDF_TTS:
             with open(self.output_filepath_json, "w") as f:
                 json.dump(self.get_data(), f, indent=4)
             return True
-        except Exception as e:
+        except Exception:
             traceback.print_exc()
 
         return False
 
     def load_data(self):
         data = {'info': {}}
-        try:
-            with open(self.output_filepath_json, "r") as f:
-                data = json.load(f)
-        except Exception as e:
-            traceback.print_exc()
+        if os.path.isfile(self.output_filepath_json):
+            print(f"Data File Exists... Loading: {self.output_filepath_json}")
+            try:
+                with open(self.output_filepath_json, "r") as f:
+                    data = json.load(f)
+            except Exception:
+                traceback.print_exc()
+        else:
+            print(f"Data File Does Not Exist... Creating: {self.output_filepath_json}")
         return data
 
     def filter(self, text):
@@ -187,10 +190,9 @@ class PDF_TTS:
             shouldAdd = False
 
         if "".join(text.split()).isdigit() or \
-            text.startswith("http") or \
-            text.startswith("www") or \
+                text.startswith("http") or \
+                text.startswith("www") or \
                 len(text) == 0:
-
             self.removals['other'].append(text)
             shouldAdd = False
 
@@ -216,7 +218,7 @@ class PDF_TTS:
         return self.text_audio_map is not None
 
     def process(self):
-        print(f"# PROCESSING: {self.output_filename}")
+        print(f"PROCESSING: {self.output_filename}")
 
         self.doc = self.setup_doc(self.filename)
 
@@ -254,9 +256,8 @@ class PDF_TTS:
                     text_buf.append(text)
 
         with open(self.output_filepath_txt, "w") as f:
-            for i in range(len(text_buf)):
-                line = text_buf[i]
-                f.write(line)
+            for item in text_buf:
+                f.write(item)
 
         self.text_audio_map = []
         with open(self.output_filepath_txt, "r") as f:
@@ -308,16 +309,12 @@ class PDF_TTS:
             return None
         text, audio = self.text_audio_map[index]
 
-        # print(f" - {index}: {text}")
-        # is_audio_available = audio is not None
-        # print(
-        #     f"{'(' if not is_audio_available else '['}{i+1}/{len(self.text_audio_map)}{')' if not is_audio_available else ']'} {text}")
         if audio is None:
             # Remove formatting from text using the formatting array
             text_clean = text
             for f in self.formatting:
                 text_clean = text_clean.replace(f"<{f}>", "")
-            print(text_clean)
+            print(f"STREAMING: {text} [API]")
             synthesis_input = texttospeech.SynthesisInput(text=text_clean)
             audio = self.client.synthesize_speech(input=synthesis_input,
                                                   voice=self.voice,
@@ -326,17 +323,15 @@ class PDF_TTS:
             self.text_audio_map[index] = (text, audio)
             try:
                 self.save_text_audio_map(overwrite=True)
-            except KeyboardInterrupt:
+            except KeyboardInterrupt as e:
                 self.save_text_audio_map(overwrite=True)
-                raise KeyboardInterrupt
+                raise KeyboardInterrupt from e
+
+        else:
+            print(f"STREAMING: {text} [CACHE]")
 
         audio_io = io.BytesIO(audio)
-        data = audio_io.read()
-        # play_obj = sa.WaveObject.from_wave_file(io.BytesIO(audio))
-        # print(play_obj)
-        # play_obj.play()
-        # play_obj.wait_done()
-        return data
+        return audio_io.read()
 
     def clean(self):
         if os.path.exists(self.output_filepath_txt):
@@ -345,7 +340,7 @@ class PDF_TTS:
             os.remove(self.output_filepath_pkl)
 
     def genWavHeader(self, sampleRate, bitsPerSample, channels):
-        datasize = 2000*10**6
+        datasize = 2000 * 10 ** 6
         # (4byte) Marks file as RIFF
         o = bytes("RIFF", 'ascii')
         # (4byte) File size in bytes excluding this and RIFF marker
@@ -365,7 +360,7 @@ class PDF_TTS:
         o += (sampleRate * channels * bitsPerSample //
               8).to_bytes(4, 'little')  # (4byte)
         o += (channels * bitsPerSample // 8).to_bytes(2,
-                                                      'little')               # (2byte)
+                                                      'little')  # (2byte)
         # (2byte)
         o += (bitsPerSample).to_bytes(2, 'little')
         # (4byte) Data Chunk Marker
