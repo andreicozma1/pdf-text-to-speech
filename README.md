@@ -20,7 +20,7 @@ NOTE: You must have `GOOGLE_APPLICATION_CREDENTIALS` variable set in your enviro
 For example, add the credentials file to your `~/.bashrc` or `~/.zshrc` file as follows:
 
 ```bash
-export GOOGLE_APPLICATION_CREDENTIALS="$HOME/API_KEYS/XXXXX-XXXXX-XXAYYBZZCABC.json"
+export GOOGLE_APPLICATION_CREDENTIALS="$HOME/API_KEYS/XXX-XXX-XXYYZZ.json"
 ```
 
 Then re-source your `~/.bashrc` (or `~/.zshrc`) file as such:
