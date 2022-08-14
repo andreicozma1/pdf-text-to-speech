@@ -11,8 +11,8 @@ at your own pace.
 Python 3.X is required with the following modules:
 - Flask (for Web Interface + API)
 - PyMuPDF (for PDF Parsing functionality)
-- difflib (for PDF text filtering functionality [WIP])
 - Google Cloud Text-To-Speech API (for TTS Functionality)
+- difflib (for PDF text filtering functionality [WIP])
 
 Install everything with:
 ```bash
