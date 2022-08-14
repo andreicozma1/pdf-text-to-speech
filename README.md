@@ -1,13 +1,19 @@
 # PDF Text-To-Speech
 
+Why just read your documents when you can also listen to them? It has been proven that is much easier for the brain to
+retain information when it is presented through multiple channels (e.g. visual + auditory inputs).
+Start saving precious time and energy by converting your documents to speech, and then listen to them like an audiobook
+at your own pace.
+
 ## Installing Dependencies:
+
 ```bash
 pip3 install -r requirements.txt
 ```
 
 ## Setting up Google TTS:
 
-Follow the instructions here: https://cloud.google.com/text-to-speech/docs/before-you-begin   
+Follow the instructions here: https://cloud.google.com/text-to-speech/docs/before-you-begin
 
 NOTE: You must have `GOOGLE_APPLICATION_CREDENTIALS` variable set in your environment for `Google TTS` to work.
 
@@ -37,15 +43,17 @@ flask run
 - Press `Prev` (or `Left Arrow` button) or `Next` (or `Right Arrow` button) to navigate through the sentences
 - Press `Play` or the `Ctrl + SPACE` button to listen to the audio, automatically progressing to the next sentence
 - You can also click on any sentence to navigate to it
-  
+
 ## Interface:
 
 ![img.png](img.png)
 
 ## Text Filters (WIP):
 
-Filters are used to remove certain patterns of text while processing the PDF file, using `difflib` to compute the similarity ratio between the text and the filter.  
+Filters are used to remove certain patterns of text while processing the PDF file, using `difflib` to compute the
+similarity ratio between the text and the filter.  
 Currently there are 3 filters in the following locations:
+
 - Authors: `./filters/authors`
 - References: `./filters/references`
 - Custom: `./filters/custom`
