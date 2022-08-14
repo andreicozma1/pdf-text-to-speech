@@ -314,7 +314,7 @@ class PDF_TTS:
             text_clean = text
             for f in self.formatting:
                 text_clean = text_clean.replace(f"<{f}>", "")
-            print(f"STREAMING: {text} [API]")
+            print(f"STREAMING [API]: {text.strip()}")
             synthesis_input = texttospeech.SynthesisInput(text=text_clean)
             audio = self.client.synthesize_speech(input=synthesis_input,
                                                   voice=self.voice,
@@ -328,7 +328,7 @@ class PDF_TTS:
                 raise KeyboardInterrupt from e
 
         else:
-            print(f"STREAMING: {text} [CACHE]")
+            print(f"STREAMING [CACHE]: {text.strip()}")
 
         audio_io = io.BytesIO(audio)
         return audio_io.read()
