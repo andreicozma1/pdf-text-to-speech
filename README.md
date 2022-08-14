@@ -1,7 +1,7 @@
 # PDF Text-To-Speech
 
 ## Installing Dependencies:
-```
+```bash
 pip3 install -r requirements.txt
 ```
 
@@ -10,6 +10,18 @@ pip3 install -r requirements.txt
 Follow the instructions here: https://cloud.google.com/text-to-speech/docs/before-you-begin   
 
 NOTE: You must have `GOOGLE_APPLICATION_CREDENTIALS` variable set in your environment for `Google TTS` to work.
+
+For example, add the credentials file to your `~/.bashrc` or `~/.zshrc` file as follows:
+
+```bash
+export GOOGLE_APPLICATION_CREDENTIALS="$HOME/API_KEYS/XXXXX-XXXXX-XXAYYBZZCABC.json"
+```
+
+Then re-source your `~/.bashrc` or `~/.zshrc` file as such:
+
+```bash
+source ~/.bashrc # or ~/.zshrc
+```
 
 ## Running the Web Server:
 
