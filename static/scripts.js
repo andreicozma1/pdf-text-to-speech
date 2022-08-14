@@ -113,6 +113,7 @@ function get_stream_url(index) {
 
 function handle_formatting(elem, text){
     // empty class list
+    elem.removeAttribute('class')
     for (let i in formatting) {
         const class_name = formatting[i]
         const tag = `<${class_name}>`
@@ -271,3 +272,5 @@ if (data.text_list.length > 0) {
 
     setProgress();
 }
+
+// TODO: Show TOC from data.info.toc

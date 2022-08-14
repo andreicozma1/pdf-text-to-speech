@@ -1,6 +1,9 @@
+import datetime
 import difflib
+import json
 import os
 import pickle
+import traceback
 import fitz
 from google.cloud import texttospeech
 from tqdm import tqdm
@@ -17,11 +20,13 @@ import io
 class PDF_TTS:
 
     def __init__(self, filename) -> None:
+        self.filename = filename
         self.output_filename = os.path.basename(filename).split('.')[0]
         output_filepath = os.path.join(
             os.path.dirname(filename), self.output_filename)
         self.output_filepath_txt = f"{output_filepath}.txt"
         self.output_filepath_pkl = f"{output_filepath}.pkl"
+        self.output_filepath_json = f"{output_filepath}.json"
 
         self.speaking_rate = 1
         self.pitch = 0.0
@@ -70,14 +75,13 @@ class PDF_TTS:
                 'cutoff': 0.4,
             }
         }
+        self.formatting = ["BOLD", "ITALIC",
+                           "UNDERLINE", "STRIKETHROUGH", "CENTER"]
 
-        self.doc = self.setup(filename)
-
+        self.doc = None
         self.text_audio_map = self.read_text_audio_map()
 
-        self.formatting = ["BOLD", "ITALIC", "UNDERLINE", "STRIKETHROUGH", "CENTER"]
-
-    def setup(self, filename):
+    def setup_doc(self, filename):
         # Setting up removals
         self.removals = {'other': [],
                          'parentheses': [],
@@ -106,21 +110,50 @@ class PDF_TTS:
         return fitz.Document(filename)
 
     def get_data(self):
-        info = {
-            'info': {
-                'file_name': os.path.basename(self.doc.name),
+        data = self.load_data()
+        if self.doc and not self.doc.is_closed:
+            data['info'].update({
                 'page_count': self.doc.page_count,
                 'has_links': self.doc.has_links(),
                 'has_annots': self.doc.has_annots(),
                 'is_encrypted': self.doc.is_encrypted,
                 'is_password_protected': self.doc.needs_pass,
-                'is_processed': self.is_processed(),
-            },
-            'toc': self.doc.get_toc(),
+
+            })
+            data.update({
+                'toc': self.doc.get_toc(),
+            })
+
+        data['info'].update({
+            'file_name': os.path.basename(self.filename),
+            'is_processed': self.is_processed(),
+            'is_open': True if self.doc and not self.doc.is_closed else False,
+        })
+        data.update({
             'text_list': [i[0] for i in self.text_audio_map] if self.text_audio_map else [],
             'removals': self.removals,
-        }
-        return info
+            'last_updated': datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        })
+        return data
+
+    def save_data(self):
+        try:
+            with open(self.output_filepath_json, "w") as f:
+                json.dump(self.get_data(), f, indent=4)
+            return True
+        except Exception as e:
+            traceback.print_exc()
+
+        return False
+
+    def load_data(self):
+        data = {'info': {}}
+        try:
+            with open(self.output_filepath_json, "r") as f:
+                data = json.load(f)
+        except Exception as e:
+            traceback.print_exc()
+        return data
 
     def filter(self, text):
         if self.skip_parentheses:
@@ -185,15 +218,17 @@ class PDF_TTS:
     def process(self):
         print(f"# PROCESSING: {self.output_filename}")
 
+        self.doc = self.setup_doc(self.filename)
+
         text_buf = []
         page: fitz.Page
         for page in tqdm(self.doc):
             label = page.get_label()
             label = f' ({label})' if label != '' else ''
-            
+
             buf_page_num = f"\n<CENTER><UNDERLINE><BOLD>PAGE #{page.number + 1}{label}<BOLD><UNDERLINE><CENTER>\n\n"
             # if text_buf and not text_buf[-1].endswith('\n'):
-                # buf_page_num =  + buf_page_num
+            # buf_page_num =  + buf_page_num
             # if text_buf:
             #     print("=" * 50)
             #     print(text_buf[-1])
@@ -209,7 +244,7 @@ class PDF_TTS:
                     # print(txt)
                     # print(txt_new)
 
-                    # text = 
+                    # text =
                     text = txt + "\n\n"
                     text = text.replace("  ", " ")
                     text = text.replace("- ", "")
@@ -232,7 +267,7 @@ class PDF_TTS:
                     if l == "":
                         continue
                     # if len(sentences) > 1 and not l.endswith("\n"):
-                    
+
                     if "Roesner et al" in l:
                         print(l)
                     if l.endswith("\n"):
@@ -241,7 +276,7 @@ class PDF_TTS:
                         l += ". "
                     else:
                         l += "\n"
-                        
+
                     self.text_audio_map.append((l, None))
 
         # Save initial text to file, with no audio
@@ -263,6 +298,8 @@ class PDF_TTS:
                     f" - Number of pre-loaded audio sequences: {len([x for x in self.text_audio_map if x[1] is not None])}")
 
         self.save_text_audio_map(overwrite=False)
+        self.save_data()
+        self.doc.close()
         return self.is_processed()
 
     def stream_one(self, index):

@@ -1,4 +1,5 @@
 import os
+import traceback
 from flask import Flask, render_template, request, make_response, redirect, url_for, send_from_directory, Response
 import secrets
 
@@ -18,6 +19,14 @@ def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+def rrmdir(path):
+    for entry in os.scandir(path):
+        if entry.is_dir():
+            rrmdir(entry)
+        else:
+            os.remove(entry)
+    os.rmdir(path)
+    
 @app.route("/")
 def index(message = "Upload a PDF file to get started."):
     # get data from request 'message'
@@ -51,9 +60,14 @@ def player(upload_id):
     fname_pdf = pdf_files[0]
     fname_txt = fname_pdf.replace('.pdf', '.txt')
     p = PDF_TTS(os.path.join(upload_dir_path, fname_pdf))
-    data = p.get_data()
     
     if not query:
+        try:
+            data = p.get_data()
+        except Exception as e:
+            traceback.print_exc()            
+            r = render_template("./index.html", message="Error: Failed to get data for this document")
+            return r
         return render_template("./index.html", id=upload_id, data=data)   
 
     # check if query is valid    
@@ -64,6 +78,7 @@ def player(upload_id):
         try:
             p.process()
         except Exception as e:
+            traceback.print_exc()            
             r = render_template("./index.html", message="Error: Failed to process PDF file")
             return r
         return redirect(upload_id)
@@ -71,6 +86,7 @@ def player(upload_id):
         try:
             p.clean()
         except Exception as e:
+            traceback.print_exc()            
             r = render_template("./index.html", message="Error: Failed to clean processed state for PDF file")
             return r
         return redirect(upload_id)
@@ -93,8 +109,9 @@ def player(upload_id):
         return send_from_directory(upload_dir_path, fname_txt, as_attachment=True)
     elif query == 'remove_doc':
         try:
-            os.rmdir(upload_dir_path)
+            rrmdir(upload_dir_path)
         except Exception as e:
+            traceback.print_exc()            
             r = render_template("./index.html", message="Error: Failed to remove upload directory for this document")
             return r
         return redirect(url_for('index'))
@@ -104,13 +121,13 @@ def player(upload_id):
 def upload():
     if request.method == "POST":
         if 'file' not in request.files:
-            r = redirect(url_for('index', message='Upload file not found'))
+            r = render_template("./index.html", message='Upload file not found')
             return r
         
         f = request.files["file"]
         
         if f.filename == '':
-            r = redirect(url_for('index', message="Upload file not selected"))
+            r = render_template("./index.html", message="Upload file not selected")
             return r
         
         if f and allowed_file(f.filename):
@@ -121,7 +138,7 @@ def upload():
             resp = make_response(redirect(url_for('player', upload_id=upload_id, action='process')))
             return resp
         else:
-            r = redirect(url_for('index', message="Upload file not allowed"))
+            r = render_template("./index.html", message="Upload file not allowed")
             return r
     
     

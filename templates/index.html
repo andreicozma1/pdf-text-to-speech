@@ -83,8 +83,8 @@
       <p>Has Links?: {{data.info.has_links}}</p>
       <p>Has Annotations?: {{data.info.has_annots}}</p>
       <p>Is Encrypted?: {{data.info.is_encrypted}}</p>
-      <p>Is Password Protected?: {{data.is_password_protected}}</p>
-      <p>TOC: {{data.toc}}</p>
+      <p>Is Password Protected?: {{data.info.is_password_protected}}</p>
+      <p>Is Open?: {{data.info.is_open}}</p>
       <p>Is Processed?: {{data.info.is_processed}}</p>
 
       <div>
@@ -100,7 +100,7 @@
           Download TXT
         </button>
       </div>
-      
+
       <div>
         <button onclick="remove()" id="btn_remove">Remove Document</button>
       </div>
