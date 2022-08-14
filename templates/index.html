@@ -1,159 +1,159 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>PDF TTS</title>
     <style>
-      div {
-        margin: 1em;
-      }
+        div {
+            margin: 1em;
+        }
 
-      p,
-      a {
-        font-size: 1.2em;
-      }
+        p,
+        a {
+            font-size: 1.2em;
+        }
 
-      audio {
-        width: 80%;
-      }
+        audio {
+            width: 80%;
+        }
 
-      a:hover {
-        color: #7a7aff;
-        cursor: pointer;
-      }
+        a:hover {
+            color: #7a7aff;
+            cursor: pointer;
+        }
 
-      .active {
-        color: #0000ff;
-        cursor: pointer;
-      }
+        .active {
+            color: #0000ff;
+            cursor: pointer;
+        }
 
-      .CENTER {
-        text-align: center;
-      }
+        .CENTER {
+            text-align: center;
+        }
 
-      #textbox {
-        display: flex;
-        flex-direction: column;
-        text-align: left;
-        margin: 1.5em;
-      }
+        #textbox {
+            display: flex;
+            flex-direction: column;
+            text-align: left;
+            margin: 1.5em;
+        }
 
-      .slider {
-        display: block;
-        width: 80%;
-        margin: 1em auto;
-      }
+        .slider {
+            display: block;
+            width: 80%;
+            margin: 1em auto;
+        }
 
-      .BOLD {
-        font-weight: bold;
-      }
+        .BOLD {
+            font-weight: bold;
+        }
 
-      .ITALIC {
-        font-style: italic;
-      }
+        .ITALIC {
+            font-style: italic;
+        }
 
-      .UNDERLINE {
-        text-decoration: underline;
-      }
+        .UNDERLINE {
+            text-decoration: underline;
+        }
 
-      .STRIKETHROUGH {
-        text-decoration: line-through;
-      }
+        .STRIKETHROUGH {
+            text-decoration: line-through;
+        }
     </style>
-  </head>
-  <body>
-    <div class="CENTER">
-      <h1>PDF Text-To-Speech</h1>
+</head>
+<body>
+<div class="CENTER">
+    <h1>PDF Text-To-Speech</h1>
 
-      <hr class="dashed" />
+    <hr class="dashed"/>
 
-      {% if message is defined and message%}
+    {% if message is defined and message %}
 
-      <p>{{message}}</p>
-      <hr class="dashed" />
-      
-      {% endif %}
+        <p>{{ message }}</p>
+        <hr class="dashed"/>
 
-      {% if data is defined and data and id is defined and id%}
+    {% endif %}
 
-      <p>Document ID: {{id}}</p>
-      <p>File Name: {{data.info.file_name}}</p>
+    {% if data is defined and data and id is defined and id %}
 
-      {% if data.info.is_processed %}
-      <p>Page Count: {{data.info.page_count}}</p>
-      <p>Has Links? > {{data.info.has_links}} <</p>
-      <p>Has Annotations? > {{data.info.has_annots}} <</p>
-      <p>Is Encrypted? > {{data.info.is_encrypted}} <</p>
-      <p>Is Password Protected? > {{data.info.is_password_protected}} <</p>
-      {% endif %}
+        <p>Document ID: {{ id }}</p>
+        <p>File Name: {{ data.info.file_name }}</p>
 
-      <p>Is Open? > {{data.info.is_open}} <</p>
-      <p>Is Processed? > {{data.info.is_processed}} <</p>
+        {% if data.info.is_processed %}
+            <p>Page Count: <b>{{ data.info.page_count }}</b></p>
+            <p>Has Links? <b>{{ data.info.has_links }}</b></p>
+            <p>Has Annotations? <b>{{ data.info.has_annots }}</b></p>
+            <p>Is Encrypted? <b>{{ data.info.is_encrypted }}</b></p>
+            <p>Is Password Protected? <b>{{ data.info.is_password_protected }}</b></p>
+        {% endif %}
 
-      <div>
-        <button onclick="process()" id="btn_process">Process</button>
-        <button onclick="clean()" id="btn_clean">Clean</button>
-      </div>
+        <p>Is Open? <b>{{ data.info.is_open }}</b></p>
+        <p>Is Processed? <b>{{ data.info.is_processed }}</b></p>
 
-      <div>
-        <button onclick="download_pdf()" id="btn_download_pdf">
-          Download PDF
-        </button>
-        <button onclick="download_txt()" id="btn_download_txt">
-          Download TXT
-        </button>
-      </div>
+        <div>
+            <button onclick="process()" id="btn_process">Process</button>
+            <button onclick="clean()" id="btn_clean">Clean</button>
+        </div>
 
-      <div>
-        <button onclick="remove()" id="btn_remove">Remove Document</button>
-      </div>
+        <div>
+            <button onclick="download_pdf()" id="btn_download_pdf">
+                Download PDF
+            </button>
+            <button onclick="download_txt()" id="btn_download_txt">
+                Download TXT
+            </button>
+        </div>
 
-      <hr class="dashed" />
-      <div id="controlsBox">
-        <p id="progressText"></p>
-        <button onclick="prev()">Prev</button>
-        <button onclick="toggle_play()" id="btn_play">Play</button>
-        <button onclick="next()">Next</button>
-        <input
-          type="range"
-          min="0"
-          step="1"
-          class="slider"
-          id="progressRange"
-          onmouseup="seek_to_index(this.value)"
-          onkeyup="seek_to_index(this.value)"
-        />
+        <div>
+            <button onclick="remove()" id="btn_remove">Remove Document</button>
+        </div>
 
-        <audio src="" type="audio/wav" id="audio_source">
-        Your browser does not support the audio element.
-        </audio>
-        <p id="currentText"></p>
-        <hr class="dashed" />
-      </div>
-    </div>
+        <hr class="dashed"/>
+        <div id="controlsBox">
+            <p id="progressText"></p>
+            <button onclick="prev()">Prev</button>
+            <button onclick="toggle_play()" id="btn_play">Play</button>
+            <button onclick="next()">Next</button>
+            <input
+                    type="range"
+                    min="0"
+                    step="1"
+                    class="slider"
+                    id="progressRange"
+                    onmouseup="seek_to_index(this.value)"
+                    onkeyup="seek_to_index(this.value)"
+            />
 
-    <div id="textbox"></div>
+            <audio src="" type="audio/wav" id="audio_source">
+                Your browser does not support the audio element.
+            </audio>
+            <p id="currentText"></p>
+            <hr class="dashed"/>
+        </div>
+        </div>
 
-    <script>
-      const data = {{ data| tojson | safe}}
-      console.log(data)
-    </script>
-    <script src="{{url_for('static', filename='scripts.js')}}"></script>
+        <div id="textbox"></div>
+
+        <script>
+            const data = {{ data| tojson | safe}}
+                console.log(data)
+        </script>
+        <script src="{{ url_for('static', filename='scripts.js') }}"></script>
 
     {% else %}
 
-    <form
-      action="http://localhost:5000/upload"
-      method="POST"
-      enctype="multipart/form-data"
-      class="center"
-      style="margin: 1em;"
-    >
-      <input type="file" name="file" />
-      <input type="submit" />
-    </form>
+        <form
+                action="http://localhost:5000/upload"
+                method="POST"
+                enctype="multipart/form-data"
+                class="center"
+                style="margin: 1em;"
+        >
+            <input type="file" name="file"/>
+            <input type="submit"/>
+        </form>
 
     {% endif %}
-  </body>
+</body>
 </html>
