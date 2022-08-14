@@ -17,7 +17,7 @@ For example, add the credentials file to your `~/.bashrc` or `~/.zshrc` file as 
 export GOOGLE_APPLICATION_CREDENTIALS="$HOME/API_KEYS/XXXXX-XXXXX-XXAYYBZZCABC.json"
 ```
 
-Then re-source your `~/.bashrc` or `~/.zshrc` file as such:
+Then re-source your `~/.bashrc` (or `~/.zshrc`) file as such:
 
 ```bash
 source ~/.bashrc # or ~/.zshrc
