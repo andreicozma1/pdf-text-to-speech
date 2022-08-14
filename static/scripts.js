@@ -30,6 +30,7 @@ const formatting = [
     "ITALIC",
     "UNDERLINE",
     "STRIKETHROUGH",
+    "CENTER"
 ]
 
 // ============================================================
@@ -91,19 +92,30 @@ function get_stream_url(index) {
     return parser.href;
 }
 
+function handle_formatting(elem, text){
+    // empty class list
+    for (let i in formatting) {
+        const class_name = formatting[i]
+        const tag = `<${class_name}>`
+    
+        if (text.includes(tag)) {
+            text = text.replaceAll(tag, "");
+            elem.classList.add(`${class_name}`);
+        }
+    }
+    elem.innerText = text;
+    return elem;
+}
+
 
 function setProgress() {
     let text = data.text_list[audio_index]
-    // Remove formatting keys from text
-    for (let i in formatting) {
-        text = text.replaceAll(`<${formatting[i]}>`, "");
-    }
 
     console.log(`Setting progress: [${audio_index}] - ${text}`);
 
     progress_text.innerText = `${audio_index}/${data.text_list.length - 1}`
     progress_range.value = audio_index
-    current_text.innerText = text
+    handle_formatting(current_text, text)
     let active_text = document.getElementById("text_" + audio_index)
     // add class to active text
     active_text.classList.add("active")
@@ -181,10 +193,10 @@ function prev() {
 }
 
 document.body.onkeyup = function (e) {
-    if (e.key == " " ||
+    if ((e.key == " " ||
         e.code == "Space" ||
-        e.keyCode == 32
-    ) {
+        e.keyCode == 32) &&
+        e.ctrlKey) {
         toggle_play()
     }
     if (e.key == "ArrowRight" ||
@@ -211,28 +223,32 @@ audio_source.addEventListener('ended', function (ev) {
 
 if (data.text_list.length > 0) {
     progress_range.max = data.text_list.length - 1;
+    const paras = [document.createElement("p")];
     // Append link elements to the textbox
     for (let i = 0; i < data.text_list.length; i++) {
+        const text = data.text_list[i];
+        // if (text === "\n") {
+        //     continue;
+        // }
+ 
         const link = document.createElement("a");
         link.onclick = function () {
             seek_to_index(i);
         };
         link.id = "text_" + i
-        
-        // Formatting for each link
-        let text = data.text_list[i];
-        for (let i in formatting) {
-            const class_name = formatting[i]
-            const tag = `<${class_name}>`
+        handle_formatting(link, text)
 
-            if (text.includes(tag)) {
-                text = text.replaceAll(tag, "");
-                link.classList.add(`${class_name}`);
-            }
+        paras[paras.length - 1].appendChild(link);
+        
+        if (text[text.length - 1] === "\n") {
+            paras.push(document.createElement("p"));
         }
-        link.innerText = text;
-        textbox.appendChild(link);
         // textbox.appendChild(document.createElement("br"));
     }
+    
+    for (let i = 0; i < paras.length; i++) {
+        textbox.appendChild(paras[i]);
+    }
+
     setProgress();
 }

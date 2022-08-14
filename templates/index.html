@@ -28,23 +28,21 @@
         cursor: pointer;
       }
 
-      .center {
+      .CENTER {
         text-align: center;
       }
 
       #textbox {
+        display: flex;
+        flex-direction: column;
         text-align: left;
-        margin: 2em;
+        margin: 1.5em;
       }
 
       .slider {
         display: block;
         width: 80%;
         margin: 1em auto;
-      }
-
-      #currentText {
-        font-weight: bold;
       }
 
       .BOLD {
@@ -65,7 +63,7 @@
     </style>
   </head>
   <body>
-    <div class="center">
+    <div class="CENTER">
       <h1>PDF Text-To-Speech</h1>
 
       <hr class="dashed" />
@@ -101,7 +99,6 @@
       </div>
 
       <hr class="dashed" />
-
       <div id="controlsBox">
         <p id="progressText"></p>
         <button onclick="prev()">Prev</button>
@@ -122,10 +119,10 @@
         </audio>
         <p id="currentText"></p>
         <hr class="dashed" />
-        <div id="textbox"></div>
       </div>
     </div>
 
+    <div id="textbox"></div>
 
     <script>
       const data = {{ data| tojson | safe}}
@@ -139,7 +136,8 @@
       action="http://localhost:5000/upload"
       method="POST"
       enctype="multipart/form-data"
-      style="text-align: center; margin: 1em"
+      class="center"
+      style="margin: 1em;"
     >
       <input type="file" name="file" />
       <input type="submit" />

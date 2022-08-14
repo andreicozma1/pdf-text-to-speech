@@ -75,7 +75,7 @@ class PDF_TTS:
 
         self.text_audio_map = self.read_text_audio_map()
 
-        self.formatting = ["BOLD", "ITALIC", "UNDERLINE", "STRIKETHROUGH"]
+        self.formatting = ["BOLD", "ITALIC", "UNDERLINE", "STRIKETHROUGH", "CENTER"]
 
     def setup(self, filename):
         # Setting up removals
@@ -123,10 +123,6 @@ class PDF_TTS:
         return info
 
     def filter(self, text):
-        # text = text.replace("\n", " ").strip()
-        # text = text.replace("\n", " ").strip()
-        text_stripped = text.strip()
-
         if self.skip_parentheses:
             self.removals['parentheses'].append(text)
             text = re.sub("\(.*?\)", "", text)
@@ -138,31 +134,31 @@ class PDF_TTS:
             text = re.sub("\{.*?\}", "", text)
 
         sim_author = difflib.get_close_matches(
-            text_stripped, self.filters['authors']['items'], cutoff=self.filters['authors']['cutoff'])
+            text, self.filters['authors']['items'], cutoff=self.filters['authors']['cutoff'])
         sim_ref = difflib.get_close_matches(
-            text_stripped, self.filters['references']['items'], cutoff=self.filters['references']['cutoff'])
+            text, self.filters['references']['items'], cutoff=self.filters['references']['cutoff'])
         sim_custom = difflib.get_close_matches(
-            text_stripped, self.filters['custom']['items'], cutoff=self.filters['custom']['cutoff'])
+            text, self.filters['custom']['items'], cutoff=self.filters['custom']['cutoff'])
 
         shouldAdd = True
-        if (len(text_stripped.split()) <= 4 and len(sim_author) > 0):
-            self.removals['authors'].append(text_stripped)
+        if (len(text.split()) <= 4 and len(sim_author) > 0):
+            self.removals['authors'].append(text)
             shouldAdd = False
 
-        if (text_stripped.startswith('[') and len(sim_ref) > 0):
-            self.removals['references'].append(text_stripped)
+        if (text.startswith('[') and len(sim_ref) > 0):
+            self.removals['references'].append(text)
             shouldAdd = False
 
         if len(sim_custom) > 0:
-            self.removals['custom'].append(text_stripped)
+            self.removals['custom'].append(text)
             shouldAdd = False
 
-        if "".join(text_stripped.split()).isdigit() or \
-            text_stripped.startswith("http") or \
-            text_stripped.startswith("www") or \
-                len(text_stripped) == 0:
+        if "".join(text.split()).isdigit() or \
+            text.startswith("http") or \
+            text.startswith("www") or \
+                len(text) == 0:
 
-            self.removals['other'].append(text_stripped)
+            self.removals['other'].append(text)
             shouldAdd = False
 
         if not shouldAdd:
@@ -194,20 +190,27 @@ class PDF_TTS:
         for page in tqdm(self.doc):
             label = page.get_label()
             label = f' ({label})' if label != '' else ''
-            text_buf.append(
-                f"<UNDERLINE><BOLD>PAGE #{page.number}{label}<BOLD><UNDERLINE>\n\n")
+            
+            buf_page_num = f"\n<CENTER><UNDERLINE><BOLD>PAGE #{page.number + 1}{label}<BOLD><UNDERLINE><CENTER>\n\n"
+            # if text_buf and not text_buf[-1].endswith('\n'):
+                # buf_page_num =  + buf_page_num
+            # if text_buf:
+            #     print("=" * 50)
+            #     print(text_buf[-1])
+            text_buf.append(buf_page_num)
             page = page.get_textpage()
             blocks = page.extractBLOCKS()
             for b in blocks:
-                txt = b[4]
-                txt_new = self.filter(txt)
-                if txt_new is not None:
+                txt = b[4].strip()
+                txt = " ".join(txt.split("\n")).strip()
+                txt = self.filter(txt)
+                if txt is not None:
                     # print("=" * 50)
                     # print(txt)
                     # print(txt_new)
 
-                    text = " ".join(txt_new.split("\n"))
-                    text += "\n\n"
+                    # text = 
+                    text = txt + "\n\n"
                     text = text.replace("  ", " ")
                     text = text.replace("- ", "")
                     text = text.replace(" , ", ", ")
@@ -224,10 +227,21 @@ class PDF_TTS:
         with open(self.output_filepath_txt, "r") as f:
             lines = f.readlines()
             for line in lines:
-                sentences = line.split(". ")
+                sentences = line.strip().split(". ")
                 for i, l in enumerate(sentences):
-                    if len(sentences) > 1 and not l.endswith("\n"):
+                    if l == "":
+                        continue
+                    # if len(sentences) > 1 and not l.endswith("\n"):
+                    
+                    if "Roesner et al" in l:
+                        print(l)
+                    if l.endswith("\n"):
+                        l += "\n"
+                    elif i < len(sentences) - 1:
                         l += ". "
+                    else:
+                        l += "\n"
+                        
                     self.text_audio_map.append((l, None))
 
         # Save initial text to file, with no audio
