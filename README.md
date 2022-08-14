@@ -1,9 +1,5 @@
 # PDF Text-To-Speech
 
-## Interface:
-
-![img.png](img.png)
-
 ## Installing Dependencies:
 ```bash
 pip3 install -r requirements.txt
@@ -42,6 +38,10 @@ flask run
 - Press `Play` or the `Ctrl + SPACE` button to listen to the audio, automatically progressing to the next sentence
 - You can also click on any sentence to navigate to it
   
+## Interface:
+
+![img.png](img.png)
+
 ## Text Filters (WIP):
 
 Filters are used to remove certain patterns of text while processing the PDF file, using `difflib` to compute the similarity ratio between the text and the filter.  
