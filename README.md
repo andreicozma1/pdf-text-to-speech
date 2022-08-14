@@ -45,7 +45,7 @@ flask run
 ## Usage:
 
 - Once the web server is started, navigate to http://localhost:5000/ (http://127.0.0.1:5000).
-- Upload a PDF file (ex: [pdf-sample.pdf]("./pdf-sample.pdf") in the root of this repository)
+- Upload a PDF file (ex: [pdf-sample.pdf](./pdf-sample.pdf) in the root of this repository)
 - Process the file by clicking the `Process` button
 - Press `Prev` (or `Left Arrow` button) or `Next` (or `Right Arrow` button) to navigate through the sentences
 - Press `Play` or the `Ctrl + SPACE` button to listen to the audio, automatically progressing to the next sentence
