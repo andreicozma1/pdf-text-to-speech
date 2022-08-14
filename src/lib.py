@@ -57,66 +57,70 @@ class PDF_TTS:
             audio_encoding=self.audio_encoding, speaking_rate=self.speaking_rate, pitch=self.pitch
         )
 
+        self.removals = None
         self.filters_folder = "./filters"
         self.filters = {
             'authors': {
                 'cutoff': 0.4,
             },
             'references': {
-                'cutoff': 0.05,
+                'cutoff': 0.005,
             },
             'custom': {
                 'cutoff': 0.4,
             }
         }
-        self.removals = None
 
         self.doc = self.setup(filename)
 
         self.text_audio_map = self.read_text_audio_map()
 
-    def setup(self, filename):
-        # Setting up filters
-        for filter_name in self.filters:
-            self.load_create_filter(filter_name)
-        # Setting up removals
+        self.formatting = ["BOLD", "ITALIC", "UNDERLINE", "STRIKETHROUGH"]
 
+    def setup(self, filename):
+        # Setting up removals
         self.removals = {'other': [],
                          'parentheses': [],
                          'brackets': [],
                          'braces': [],
                          'other': []}
+
+        # Setting up filters
+        for filter_name in self.filters:
+            filter_authors_path = os.path.join(
+                self.filters_folder, filter_name)
+            self.filters[filter_name]['items'] = []
+            if os.path.isfile(filter_authors_path):
+                with open(filter_authors_path, "r") as f:
+                    lines = [line.strip() for line in f.readlines()]
+                    for line in lines:
+                        if line != "":
+                            self.filters[filter_name]['items'].append(line)
+            else:
+                # create file
+                with open(filter_authors_path, "w") as f:
+                    pass
+            self.removals[filter_name] = []
+
         # Setting up document
         return fitz.Document(filename)
 
     def get_data(self):
         info = {
-            'file_name': self.doc.name,
-            'page_count': self.doc.page_count,
-            'has_links': self.doc.has_links(),
-            'has_annots': self.doc.has_annots(),
-            'is_encrypted': self.doc.is_encrypted,
-            'is_password_protected': self.doc.needs_pass,
+            'info': {
+                'file_name': os.path.basename(self.doc.name),
+                'page_count': self.doc.page_count,
+                'has_links': self.doc.has_links(),
+                'has_annots': self.doc.has_annots(),
+                'is_encrypted': self.doc.is_encrypted,
+                'is_password_protected': self.doc.needs_pass,
+                'is_processed': self.is_processed(),
+            },
             'toc': self.doc.get_toc(),
-            'is_processed': self.is_processed(),
             'text_list': [i[0] for i in self.text_audio_map] if self.text_audio_map else [],
+            'removals': self.removals,
         }
         return info
-    
-    def load_create_filter(self, name):
-        filter_authors_path = os.path.join(self.filters_folder, name)
-        self.filters[name]['items'] = []
-        if os.path.isfile(filter_authors_path):
-            with open(filter_authors_path, "r") as f:
-                lines = [line.strip() for line in f.readlines()]
-                for line in lines:
-                    if line != "":
-                        self.filters[name]['items'].append(line)
-        else:
-            # create file
-            with open(filter_authors_path, "w") as f:
-                pass
-        self.removals[name] = []
 
     def filter(self, text):
         # text = text.replace("\n", " ").strip()
@@ -134,31 +138,31 @@ class PDF_TTS:
             text = re.sub("\{.*?\}", "", text)
 
         sim_author = difflib.get_close_matches(
-            text, self.filters['authors'], cutoff=self.filters['authors']['cutoff'])
+            text_stripped, self.filters['authors']['items'], cutoff=self.filters['authors']['cutoff'])
         sim_ref = difflib.get_close_matches(
-            text, self.filters['references'], cutoff=self.filters['references']['cutoff'])
+            text_stripped, self.filters['references']['items'], cutoff=self.filters['references']['cutoff'])
         sim_custom = difflib.get_close_matches(
-            text, self.filters['custom'], cutoff=self.filters['custom']['cutoff'])
+            text_stripped, self.filters['custom']['items'], cutoff=self.filters['custom']['cutoff'])
 
         shouldAdd = True
-        if (len(text.split()) <= 4 and len(sim_author) > 0):
-            self.removals['authors'].append(text)
+        if (len(text_stripped.split()) <= 4 and len(sim_author) > 0):
+            self.removals['authors'].append(text_stripped)
             shouldAdd = False
 
-        if (text.startswith('[') and len(sim_ref) > 0):
-            self.removals['references'].append(text)
+        if (text_stripped.startswith('[') and len(sim_ref) > 0):
+            self.removals['references'].append(text_stripped)
             shouldAdd = False
 
         if len(sim_custom) > 0:
-            self.removals['custom'].append(text)
+            self.removals['custom'].append(text_stripped)
             shouldAdd = False
 
         if "".join(text_stripped.split()).isdigit() or \
             text_stripped.startswith("http") or \
             text_stripped.startswith("www") or \
-                len(text) == 0:
+                len(text_stripped) == 0:
 
-            self.removals['other'].append(text)
+            self.removals['other'].append(text_stripped)
             shouldAdd = False
 
         if not shouldAdd:
@@ -182,26 +186,25 @@ class PDF_TTS:
     def is_processed(self):
         return self.text_audio_map is not None
 
-
-
     def process(self):
         print(f"# PROCESSING: {self.output_filename}")
 
-        if self.is_processed():
-            print(" => Already processed")
-            return
         text_buf = []
         page: fitz.Page
         for page in tqdm(self.doc):
+            label = page.get_label()
+            label = f' ({label})' if label != '' else ''
+            text_buf.append(
+                f"<UNDERLINE><BOLD>PAGE #{page.number}{label}<BOLD><UNDERLINE>\n\n")
             page = page.get_textpage()
             blocks = page.extractBLOCKS()
             for b in blocks:
                 txt = b[4]
                 txt_new = self.filter(txt)
                 if txt_new is not None:
-                    print("=" * 50)
-                    print(txt)
-                    print(txt_new)
+                    # print("=" * 50)
+                    # print(txt)
+                    # print(txt_new)
 
                     text = " ".join(txt_new.split("\n"))
                     text += "\n\n"
@@ -248,29 +251,23 @@ class PDF_TTS:
         self.save_text_audio_map(overwrite=False)
         return self.is_processed()
 
-    # def stream(self):
-    #     print(f"# PLAYBACK: {self.output_filepath_txt}")
-
-    #     # if self.start_sequence >= len(self.text_audio_map):
-    #     #     raise Exception(
-    #     #         f"Start sequence is greater than total number of text sequences: {self.start_sequence} > {len(self.text_audio_map)}")
-
-    #     # CHUNK = 1024
-
-    #     for i in range(self.start_sequence, len(self.text_audio_map)):
-    #         self.stream_one(i)
-
     def stream_one(self, index):
         if not self.is_processed():
             print(" => File not processed yet. Please run `process()` first.")
             return None
         text, audio = self.text_audio_map[index]
-        print(f" - {index}: {text}")
+
+        # print(f" - {index}: {text}")
         # is_audio_available = audio is not None
         # print(
         #     f"{'(' if not is_audio_available else '['}{i+1}/{len(self.text_audio_map)}{')' if not is_audio_available else ']'} {text}")
         if audio is None:
-            synthesis_input = texttospeech.SynthesisInput(text=text)
+            # Remove formatting from text using the formatting array
+            text_clean = text
+            for f in self.formatting:
+                text_clean = text_clean.replace(f"<{f}>", "")
+            print(text_clean)
+            synthesis_input = texttospeech.SynthesisInput(text=text_clean)
             audio = self.client.synthesize_speech(input=synthesis_input,
                                                   voice=self.voice,
                                                   audio_config=self.audio_config).audio_content

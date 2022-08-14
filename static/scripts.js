@@ -1,42 +1,50 @@
 // ============================================================
 // Main Controls
-let btn_process = document.getElementById("btn_process");
-let btn_clean = document.getElementById("btn_clean");
+const btn_process = document.getElementById("btn_process");
+const btn_clean = document.getElementById("btn_clean");
 
-let btn_download_txt = document.getElementById("btn_download_txt");
-btn_download_txt.hidden = data.is_processed === false;
+const btn_download_txt = document.getElementById("btn_download_txt");
+btn_download_txt.hidden = data.info.is_processed === false;
 
 // ============================================================
 // PlayBack Controls
-let controls_box = document.getElementById("controlsBox");
-controls_box.hidden = data.is_processed === false;
+const controls_box = document.getElementById("controlsBox");
+controls_box.hidden = data.info.is_processed === false;
 
-let btn_play = document.getElementById("btn_play");
+const btn_play = document.getElementById("btn_play");
 
 // ============================================================
 // Progress Indicators
-let progress_text = document.getElementById("progressText")
-let progress_range = document.getElementById("progressRange")
-let current_text = document.getElementById("currentText")
+const progress_text = document.getElementById("progressText")
+const progress_range = document.getElementById("progressRange")
+const current_text = document.getElementById("currentText")
 
 // ============================================================
 // Full Text Display
-let textbox = document.getElementById("textbox");
+const textbox = document.getElementById("textbox");
+
+// ============================================================
+// Formatting Classes
+const formatting = [
+    "BOLD",
+    "ITALIC",
+    "UNDERLINE",
+    "STRIKETHROUGH",
+]
 
 // ============================================================
 // Handle disabling and hiding of certain elements
-btn_process.disabled = data.is_processed === true;
-btn_clean.disabled = data.is_processed === false;
+btn_process.disabled = data.info.is_processed === true;
+btn_clean.disabled = data.info.is_processed === false;
 
 // ============================================================
 // Audio Player
 let audio_index = 0
 
-let audio_source = document.getElementById("audio_source");
-audio_source.hidden = data.is_processed === false
+const audio_source = document.getElementById("audio_source");
 audio_source.removeEventListener("loadeddata", () => { });
 
-if (data.is_processed === true) {
+if (data.info.is_processed === true) {
     audio_source.src = get_stream_url(audio_index);
 }
 
@@ -84,9 +92,12 @@ function get_stream_url(index) {
 }
 
 
-
 function setProgress() {
-    const text = data.text_list[audio_index]
+    let text = data.text_list[audio_index]
+    // Remove formatting keys from text
+    for (let i in formatting) {
+        text = text.replaceAll(`<${formatting[i]}>`, "");
+    }
 
     console.log(`Setting progress: [${audio_index}] - ${text}`);
 
@@ -202,13 +213,23 @@ if (data.text_list.length > 0) {
     progress_range.max = data.text_list.length - 1;
     // Append link elements to the textbox
     for (let i = 0; i < data.text_list.length; i++) {
-        const text = data.text_list[i];
         const link = document.createElement("a");
-        // set padding to prevent text from overlapping
         link.onclick = function () {
             seek_to_index(i);
         };
-        link.id = "text_" + i;
+        link.id = "text_" + i
+        
+        // Formatting for each link
+        let text = data.text_list[i];
+        for (let i in formatting) {
+            const class_name = formatting[i]
+            const tag = `<${class_name}>`
+
+            if (text.includes(tag)) {
+                text = text.replaceAll(tag, "");
+                link.classList.add(`${class_name}`);
+            }
+        }
         link.innerText = text;
         textbox.appendChild(link);
         // textbox.appendChild(document.createElement("br"));

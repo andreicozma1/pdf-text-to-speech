@@ -12,6 +12,7 @@ from src.lib import PDF_TTS
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['TEMPLATES_AUTO_RELOAD'] = True
 
 def allowed_file(filename):
     return '.' in filename and \
@@ -113,4 +114,4 @@ def upload():
     
     
 if __name__ == "__main__":
-    app.run(debug=True, threaded=True)
+    app.run(debug=True, use_reloader=True, threaded=True)
