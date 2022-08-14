@@ -338,6 +338,8 @@ class PDF_TTS:
             os.remove(self.output_filepath_txt)
         if os.path.exists(self.output_filepath_pkl):
             os.remove(self.output_filepath_pkl)
+        if os.path.exists(self.output_filepath_json):
+            os.remove(self.output_filepath_json)
 
     def genWavHeader(self, sampleRate, bitsPerSample, channels):
         datasize = 2000 * 10 ** 6
