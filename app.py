@@ -57,19 +57,28 @@ def player(upload_id):
         return render_template("./index.html", id=upload_id, data=data)   
 
     # check if query is valid    
-    valid_queries = ['process', 'stream', 'download_pdf', 'download_txt', 'clean']
+    valid_queries = ['process', 'stream', 'download_pdf', 'download_txt', 'clean', 'remove_doc']
     if query not in valid_queries:
         return render_template("./index.html", message="Error: Invalid query")
     elif query == 'process':
-        p.process()
+        try:
+            p.process()
+        except Exception as e:
+            r = render_template("./index.html", message="Error: Failed to process PDF file")
+            return r
         return redirect(upload_id)
     elif query == 'clean':
-        p.clean()
+        try:
+            p.clean()
+        except Exception as e:
+            r = render_template("./index.html", message="Error: Failed to clean processed state for PDF file")
+            return r
         return redirect(upload_id)
     elif query == 'stream':
         stream_index = request.args.get('index')
         if not stream_index or not stream_index.isdigit():
-            return "Required integer `index` query param not specified"
+            r = render_template("./index.html", message="Required integer `index` query param not specified")
+            return r
         stream_index = int(stream_index)
         return Response(p.stream_one(stream_index), mimetype="audio/x-wav")
     elif query == 'download_pdf':
@@ -82,10 +91,13 @@ def player(upload_id):
             r = render_template("./index.html", message="Error: TXT file not found")
             return r
         return send_from_directory(upload_dir_path, fname_txt, as_attachment=True)
-
-    # if not is_processed and not p.process():
-        # resp = make_response(redirect('index'))
-        # return resp 
+    elif query == 'remove_doc':
+        try:
+            os.rmdir(upload_dir_path)
+        except Exception as e:
+            r = render_template("./index.html", message="Error: Failed to remove upload directory for this document")
+            return r
+        return redirect(url_for('index'))
     # return send_fom_directory(app.config['UPLOAD_FOLDER'],         filename)r
         
 @app.route("/upload", methods = ['POST']) 

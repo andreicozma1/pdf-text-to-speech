@@ -74,6 +74,7 @@ function download_pdf() {
     parser.searchParams.set("action", "download_pdf");
     window.location = parser.href;
 }
+
 function download_txt() {
     console.log("Downloading TXT...");
     const parser = new URL(window.location);
@@ -83,6 +84,24 @@ function download_txt() {
 
 // ============================================================
 // ============================================================
+
+function remove() {
+    console.log("Removing Document...");
+    const parser = new URL(window.location);
+    parser.searchParams.set("action", "remove_doc");
+    window.location = parser.href;
+}
+
+// ============================================================
+// ============================================================
+
+function download_txt() {
+    console.log("Downloading TXT...");
+    const parser = new URL(window.location);
+    parser.searchParams.set("action", "download_txt");
+    window.location = parser.href;
+}
+
 
 function get_stream_url(index) {
     const parser = new URL(window.location);
