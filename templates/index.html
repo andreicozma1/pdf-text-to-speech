@@ -79,13 +79,17 @@
 
       <p>Document ID: {{id}}</p>
       <p>File Name: {{data.info.file_name}}</p>
+
+      {% if data.info.is_processed %}
       <p>Page Count: {{data.info.page_count}}</p>
-      <p>Has Links?: {{data.info.has_links}}</p>
-      <p>Has Annotations?: {{data.info.has_annots}}</p>
-      <p>Is Encrypted?: {{data.info.is_encrypted}}</p>
-      <p>Is Password Protected?: {{data.info.is_password_protected}}</p>
-      <p>Is Open?: {{data.info.is_open}}</p>
-      <p>Is Processed?: {{data.info.is_processed}}</p>
+      <p>Has Links? > {{data.info.has_links}} <</p>
+      <p>Has Annotations? > {{data.info.has_annots}} <</p>
+      <p>Is Encrypted? > {{data.info.is_encrypted}} <</p>
+      <p>Is Password Protected? > {{data.info.is_password_protected}} <</p>
+      {% endif %}
+
+      <p>Is Open? > {{data.info.is_open}} <</p>
+      <p>Is Processed? > {{data.info.is_processed}} <</p>
 
       <div>
         <button onclick="process()" id="btn_process">Process</button>

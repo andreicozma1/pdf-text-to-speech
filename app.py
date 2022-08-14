@@ -33,6 +33,7 @@ def rrmdir(path):
 @app.route("/")
 def index(message="Upload a PDF file to get started."):
     # get data from request 'message'
+    print("=" * 80)
     return render_template("./index.html", message=message)
 
 
@@ -44,6 +45,7 @@ def player(upload_id):
                             message="Error: Requested an invalid Document ID. Please upload a new document.")
         return r
 
+    print('-' * 80)
     # get query param
     query = request.args.get('action')
     print(f"Query: {query}")
@@ -69,20 +71,20 @@ def player(upload_id):
     if not query:
         try:
             data = p.get_data()
-        except Exception as e:
+        except Exception:
             traceback.print_exc()
             r = render_template("./index.html", message="Error: Failed to get data for this document")
             return r
         return render_template("./index.html", id=upload_id, data=data)
 
-        # check if query is valid
+    # check if query is valid
     valid_queries = ['process', 'stream', 'download_pdf', 'download_txt', 'clean', 'remove_doc']
     if query not in valid_queries:
         return render_template("./index.html", message="Error: Invalid query")
     elif query == 'process':
         try:
             p.process()
-        except Exception as e:
+        except Exception:
             traceback.print_exc()
             r = render_template("./index.html", message="Error: Failed to process PDF file")
             return r
@@ -90,7 +92,7 @@ def player(upload_id):
     elif query == 'clean':
         try:
             p.clean()
-        except Exception as e:
+        except Exception:
             traceback.print_exc()
             r = render_template("./index.html", message="Error: Failed to clean processed state for PDF file")
             return r
@@ -115,12 +117,11 @@ def player(upload_id):
     elif query == 'remove_doc':
         try:
             rrmdir(upload_dir_path)
-        except Exception as e:
+        except Exception:
             traceback.print_exc()
             r = render_template("./index.html", message="Error: Failed to remove upload directory for this document")
             return r
         return redirect(url_for('index'))
-    # return send_fom_directory(app.config['UPLOAD_FOLDER'],         filename)r
 
 
 @app.route("/upload", methods=['POST'])
@@ -141,9 +142,7 @@ def upload():
         upload_id = secrets.token_urlsafe(36)
         os.makedirs(os.path.join(app.config['UPLOAD_FOLDER'], upload_id))
         f.save(os.path.join(app.config['UPLOAD_FOLDER'], upload_id, f.filename))
-
         return make_response(redirect(url_for('player', upload_id=upload_id, action='process')))
-
     else:
         r = render_template("./index.html", message="Upload file not allowed")
         return r

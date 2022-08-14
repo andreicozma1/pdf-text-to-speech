@@ -24,8 +24,7 @@ class PDF_TTS:
     def __init__(self, filename) -> None:
         self.filename = filename
         self.output_filename = os.path.basename(filename).split('.')[0]
-        output_filepath = os.path.join(
-            os.path.dirname(filename), self.output_filename)
+        output_filepath = os.path.join(os.path.dirname(filename), self.output_filename)
         self.output_filepath_txt = f"{output_filepath}.txt"
         self.output_filepath_pkl = f"{output_filepath}.pkl"
         self.output_filepath_json = f"{output_filepath}.json"
@@ -48,9 +47,7 @@ class PDF_TTS:
         sampleRate = 24000
         bitsPerSample = 16
         channels = 1
-        self.wav_header = self.genWavHeader(
-            sampleRate, bitsPerSample, channels)
-        # first_run = True
+        self.wav_header = self.genWavHeader(sampleRate, bitsPerSample, channels)
 
         self.ssml_gender = texttospeech.SsmlVoiceGender.MALE
         self.audio_encoding = texttospeech.AudioEncoding.LINEAR16
@@ -80,7 +77,7 @@ class PDF_TTS:
                            "UNDERLINE", "STRIKETHROUGH", "CENTER"]
 
         self.doc = None
-        self.text_audio_map = self.read_text_audio_map()
+        self.text_audio_map = self.load_text_audio_seqs()
 
     def setup_doc(self, filename):
         # Setting up removals
@@ -133,29 +130,21 @@ class PDF_TTS:
             'removals': self.removals,
             'last_updated': datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         })
+
+        print(f"DATA: Saving {self.output_filepath_json}")
+        with open(self.output_filepath_json, "w") as f:
+            json.dump(data, f, indent=4)
         return data
 
-    def save_data(self):
-        try:
-            with open(self.output_filepath_json, "w") as f:
-                json.dump(self.get_data(), f, indent=4)
-            return True
-        except Exception:
-            traceback.print_exc()
-
-        return False
-
     def load_data(self):
+        print(f"DATA: Loading {self.output_filepath_json} [Exists={os.path.isfile(self.output_filepath_json)}]")
         data = {'info': {}}
         if os.path.isfile(self.output_filepath_json):
-            print(f"Data File Exists... Loading: {self.output_filepath_json}")
             try:
                 with open(self.output_filepath_json, "r") as f:
                     data = json.load(f)
             except Exception:
                 traceback.print_exc()
-        else:
-            print(f"Data File Does Not Exist... Creating: {self.output_filepath_json}")
         return data
 
     def filter(self, text):
@@ -200,14 +189,17 @@ class PDF_TTS:
             return None
         return text
 
-    def read_text_audio_map(self):
+    def load_text_audio_seqs(self):
+        print("TEXT-AUDIO-SEQS: Loading ...")
+
         if os.path.isfile(self.output_filepath_pkl):
             with open(self.output_filepath_pkl, "rb") as f:
                 return pickle.load(f)
         else:
             return None
 
-    def save_text_audio_map(self, overwrite=False):
+    def save_text_audio_seqs(self, overwrite=False):
+        print("TEXT-AUDIO-SEQS: Saving ...")
         if overwrite or not os.path.exists(self.output_filepath_pkl):
             with open(self.output_filepath_pkl, "wb") as f:
                 pickle.dump(self.text_audio_map, f)
@@ -227,13 +219,8 @@ class PDF_TTS:
         for page in tqdm(self.doc):
             label = page.get_label()
             label = f' ({label})' if label != '' else ''
-
             buf_page_num = f"\n<CENTER><UNDERLINE><BOLD>PAGE #{page.number + 1}{label}<BOLD><UNDERLINE><CENTER>\n\n"
-            # if text_buf and not text_buf[-1].endswith('\n'):
-            # buf_page_num =  + buf_page_num
-            # if text_buf:
-            #     print("=" * 50)
-            #     print(text_buf[-1])
+
             text_buf.append(buf_page_num)
             page = page.get_textpage()
             blocks = page.extractBLOCKS()
@@ -242,11 +229,6 @@ class PDF_TTS:
                 txt = " ".join(txt.split("\n")).strip()
                 txt = self.filter(txt)
                 if txt is not None:
-                    # print("=" * 50)
-                    # print(txt)
-                    # print(txt_new)
-
-                    # text =
                     text = txt + "\n\n"
                     text = text.replace("  ", " ")
                     text = text.replace("- ", "")
@@ -267,17 +249,12 @@ class PDF_TTS:
                 for i, l in enumerate(sentences):
                     if l == "":
                         continue
-                    # if len(sentences) > 1 and not l.endswith("\n"):
-
-                    if "Roesner et al" in l:
-                        print(l)
                     if l.endswith("\n"):
                         l += "\n"
                     elif i < len(sentences) - 1:
                         l += ". "
                     else:
                         l += "\n"
-
                     self.text_audio_map.append((l, None))
 
         # Save initial text to file, with no audio
@@ -298,10 +275,10 @@ class PDF_TTS:
                 print(
                     f" - Number of pre-loaded audio sequences: {len([x for x in self.text_audio_map if x[1] is not None])}")
 
-        self.save_text_audio_map(overwrite=False)
-        self.save_data()
+        self.save_text_audio_seqs(overwrite=False)
+        data = self.get_data()
         self.doc.close()
-        return self.is_processed()
+        return data
 
     def stream_one(self, index):
         if not self.is_processed():
@@ -322,9 +299,9 @@ class PDF_TTS:
             # Save updated cache to file
             self.text_audio_map[index] = (text, audio)
             try:
-                self.save_text_audio_map(overwrite=True)
+                self.save_text_audio_seqs(overwrite=True)
             except KeyboardInterrupt as e:
-                self.save_text_audio_map(overwrite=True)
+                self.save_text_audio_seqs(overwrite=True)
                 raise KeyboardInterrupt from e
 
         else:
