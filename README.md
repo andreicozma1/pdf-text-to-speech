@@ -8,6 +8,15 @@ at your own pace.
 
 ## Installing Dependencies:
 
+Python 3.X is required.
+
+Major dependencies:
+- Flask (Web Server)
+- PyMuPDF (PDF Parsing)
+- Google Cloud Text-To-Speech API (TTS Functionality)
+
+Install everything with:
+
 ```bash
 pip3 install -r requirements.txt
 ```
