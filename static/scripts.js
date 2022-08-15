@@ -48,8 +48,7 @@ btn_clean.disabled = data.info.is_processed === false;
 // Audio Player
 let audio_index = 0
 const audio_source = document.getElementById("audio_source");
-audio_source.removeEventListener("loadeddata", () => {
-});
+audio_source.removeEventListener("loadeddata", () => {});
 
 if (data.info.is_processed === true) {
     audio_source.src = get_stream_url(audio_index);
@@ -151,11 +150,15 @@ function updatePlaybackRate() {
     playback_rate_text.innerText = `${audio_source.playbackRate}x`
 }
 
-function load_current_index() {
+function updateUI() {
     updateProgress();
+    updatePlaybackRate()
+}
+
+function load_current_index() {
     audio_source.src = get_stream_url(audio_index)
     audio_source.load();
-    updatePlaybackRate()
+    updateUI()
 }
 
 function seek_to_index(index, forward) {
@@ -275,13 +278,12 @@ if (data.text_list && data.text_list.length > 0) {
             paras.push(document.createElement("p"));
         }
     }
-
     for (let i = 0; i < paras.length; i++) {
         textbox.appendChild(paras[i]);
     }
-
-    load_current_index();
 }
+
+updateUI();
 
 
 // TODO: Show TOC from data.info.toc
