@@ -55,7 +55,9 @@ def rrmdir(path):
 @app.route("/")
 def index():
     print("=" * 80)
-    return render_template("./index.html", message="Upload a PDF file to get started.")
+    uploads = session.get('uploads', {})
+    print(f"Uploads: {uploads}")
+    return render_template("./index.html", uploads=uploads, message="Upload a PDF file to get started.")
 
 
 @app.route('/<upload_id>')
@@ -79,7 +81,6 @@ def player(upload_id):
         os.rmdir(upload_dir_path)
         r = render_template("./index.html", message="Error: No PDF files found in upload directory")
         return r
-
     # If there are more than one PDF files, return error
     if len(pdf_files) > 1:
         r = render_template("./index.html", message="Error: More than one PDF file found in the upload directory")
@@ -89,17 +90,22 @@ def player(upload_id):
     fname_txt = fname_pdf.replace('.pdf', '.txt')
     p = PDF_TTS(os.path.join(upload_dir_path, fname_pdf))
 
-    print(session['uploads'])
-
     try:
         data = p.get_data()
+
     except Exception:
         traceback.print_exc()
         r = render_template("./index.html", dialog="Error: Failed to get data for this document")
         return r
 
+    uploads = session.get('uploads', {})
+    if upload_id not in uploads:
+        uploads[upload_id] = data['info']['file_name']
+        session['uploads'] = uploads
+    print(f"Uploads: {uploads}")
+
     if not query:
-        return render_template("./index.html", id=upload_id, data=data, message="Upload New Document:")
+        return render_template("./index.html", id=upload_id, data=data, uploads=uploads)
 
     # check if query is valid
     valid_queries = ['process', 'stream', 'download_pdf', 'download_txt', 'clean', 'remove_doc']
@@ -111,7 +117,7 @@ def player(upload_id):
             p.process()
         except Exception:
             traceback.print_exc()
-            r = render_template("./index.html", dialog="Error: Failed to process PDF file")
+            r = render_template("./index.html", uploads=uploads, dialog="Error: Failed to process PDF file")
             return r
         return redirect(upload_id)
     elif query == 'clean':
@@ -119,26 +125,28 @@ def player(upload_id):
             p.clean()
         except Exception:
             traceback.print_exc()
-            r = render_template("./index.html", id=upload_id, data=data,
+            r = render_template("./index.html", id=upload_id, data=data, uploads=uploads,
                                 message="Error: Failed to clean processed state for PDF file")
             return r
         return redirect(upload_id)
     elif query == 'stream':
         stream_index = request.args.get('index')
         if not stream_index or not stream_index.isdigit():
-            r = render_template("./index.html", id=upload_id, data=data,
+            r = render_template("./index.html", id=upload_id, data=data, uploads=uploads,
                                 dialog="Required integer `index` query param not specified")
             return r
         stream_index = int(stream_index)
         return Response(p.stream_one(stream_index), mimetype="audio/x-wav")
     elif query == 'download_pdf':
         if not os.path.exists(os.path.join(upload_dir_path, fname_pdf)):
-            r = render_template("./index.html", id=upload_id, data=data, dialog="Error: PDF file not found")
+            r = render_template("./index.html", id=upload_id, data=data, uploads=uploads,
+                                dialog="Error: PDF file not found")
             return r
         return send_from_directory(upload_dir_path, fname_pdf, as_attachment=True)
     elif query == 'download_txt':
         if not os.path.exists(os.path.join(upload_dir_path, fname_txt)):
-            r = render_template("./index.html", id=upload_id, data=data, dialog="Error: TXT file not found")
+            r = render_template("./index.html", id=upload_id, data=data, uploads=uploads,
+                                dialog="Error: TXT file not found")
             return r
         return send_from_directory(upload_dir_path, fname_txt, as_attachment=True)
     elif query == 'remove_doc':
@@ -146,7 +154,8 @@ def player(upload_id):
             rrmdir(upload_dir_path)
         except Exception:
             traceback.print_exc()
-            r = render_template("./index.html", message="Error: Failed to remove upload directory for this document")
+            r = render_template("./index.html", id=upload_id, data=data, uploads=uploads,
+                                message="Error: Failed to remove upload directory for this document")
             return r
         return redirect(url_for('index'))
 
@@ -179,6 +188,7 @@ def upload():
         current_uploads = session.get('uploads', {})
         current_uploads[upload_id] = f.filename
         session['uploads'] = current_uploads
+        session.permanent = True
         return make_response(redirect(url_for('player', upload_id=upload_id, action='process')))
     else:
         r = render_template("./index.html", message="Upload file not allowed")

@@ -19,6 +19,12 @@
             cursor: pointer;
         }
 
+        .box {
+            border: 1px solid #ccc;
+            padding: .25em;
+            margin: .25em;
+        }
+
         audio {
             width: 80%;
         }
@@ -33,6 +39,14 @@
             display: block;
             width: 80%;
             margin: 1em auto;
+        }
+
+        .background {
+            background-color: #f5f5f5;
+        }
+
+        .background-dark {
+            background-color: #e5e5e5;
         }
 
         .sm {
@@ -58,8 +72,9 @@
         }
 
         .CENTER {
-            margin: auto;
             text-align: center;
+            margin-left: auto;
+            margin-right: auto;
         }
 
         .BOLD {
@@ -81,17 +96,16 @@
 </head>
 <body>
 <div class="CENTER">
-    <hr class="dashed"/>
-    <h1>PDF Text-To-Speech</h1>
-    <hr class="dashed"/>
-
-    {% if message is defined and message %}
-        <p>{{ message }}</p>
-    {% else %}
-        <p>Upload New Document:</p>
-    {% endif %}
+    <div class="box background-dark">
+        <h1>PDF Text-To-Speech</h1>
+    </div>
 
     <div>
+        {% if message is defined and message %}
+            <p>{{ message }}</p>
+        {% else %}
+            <h2>Upload New Document</h2>
+        {% endif %}
         <form
                 action="http://localhost:5000/upload"
                 method="POST"
@@ -102,28 +116,48 @@
             <input type="file" name="file"/>
             <input type="submit"/>
         </form>
-
-        <hr class="dashed md"/>
-        <h3>My Documents (Current Session):</h3>
     </div>
+
+    {% if uploads is defined and uploads %}
+        <div class="box background lg CENTER">
+            <h2>Recent Documents</h2>
+            <div id="uploads_list"></div>
+            <p class="ITALIC">Note: Clearing your browser session will empty this list.</p>
+            <p class="ITALIC">Please save the document URLs if you wish to view them elsewhere.</p>
+
+            <script>
+                const uploads = {{ uploads | tojson | safe }};
+                console.log(uploads)
+            </script>
+            <script src="{{ url_for('static', filename='uploads.js') }}"></script>
+        </div>
+    {% endif %}
 
 
     {% if data is defined and data and id is defined and id %}
         <hr class="dashed"/>
 
-        <p>File Name: {{ data.info.file_name }}</p>
-        <p>File Hash: {{ id }}</p>
+        <h2>Current Document</h2>
+        <p>Name: <b>{{ data.info.file_name }}</b></p>
+        <p>Hash: <b>{{ id }}</b></p>
+
+        {% if data.info.last_processed %}
+            <p>Last Processed: <b>{{ data.info.last_processed }}</b></p>
+        {% else %}
+            <p>Last Processed: <b>Never</b></p>
+        {% endif %}
 
         {% if data.info.is_processed %}
             <p>Document successfully processed!</p>
         {% else %}
-            <p>Please process the file to continue ...</p>
+            <i><b><p>Please process document to continue...</p></b></i>
         {% endif %}
 
         {% if data.info.is_processed %}
             <p><b>{{ data.info.page_count }} total pages</b> with <b>{{ data.info.num_seqs_cached }}</b> text-audio
                 sequences already cached out of <b>{{ data.info.num_seqs }}</b> total</p>
         {% endif %}
+
 
         {#            <p>Has Links? <b>{{ data.info.has_links }}</b></p>#}
         {#            <p>Has Annotations? <b>{{ data.info.has_annots }}</b></p>#}
@@ -147,9 +181,9 @@
             <button onclick="remove()" id="btn_remove">Remove Document</button>
         </div>
 
-        <div id="controlsBox">
-            <hr class="dashed lg"/>
-            <p id="progressText"></p>
+        <div id="controlsBox" class="lg CENTER box background">
+            <p>Progress: <span id="progressText"></span></p>
+
             <button onclick="prev()">Prev</button>
             <button onclick="toggle_play()" id="btn_play">Play</button>
             <button onclick="next()">Next</button>
@@ -163,20 +197,29 @@
                     onkeyup="seek_to_index(this.value)"
             />
 
+            <p>Playback Rate: <span id="playbackRateText"></span></p>
+            <input
+                    type="range"
+                    value=1
+                    min=0.25
+                    max=4
+                    step="0.25"
+                    class="slider"
+                    id="playbackRate"
+            />
+
             <audio src="" type="audio/wav" id="audio_source">
                 Your browser does not support the audio element.
             </audio>
-            <p id="currentText"></p>
         </div>
 
-        <hr class="dashed lg"/>
-        </div>
-
-        <div id="textbox" class="lg CENTER"></div>
+        <hr class="dashed"/>
+        <p id="currentText"></p>
+        <hr class="dashed"/>
+        <div id="textbox" class="lg CENTER"/>
 
         <script>
-            const data =
-            {{ data| tojson | safe}}
+            const data = {{ data | tojson | safe}};
             if (!data) {
                 throw new Error("API returned no `data` for the requested document.");
             }
@@ -193,7 +236,9 @@
             }
             console.log(dialog)
         </script>
+
         <script src="{{ url_for('static', filename='scripts.js') }}"></script>
     {% endif %}
+</div>
 </body>
 </html>

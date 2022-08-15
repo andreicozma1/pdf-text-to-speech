@@ -115,7 +115,7 @@ class PDF_TTS:
                 'has_annots': self.doc.has_annots(),
                 'is_encrypted': self.doc.is_encrypted,
                 'is_password_protected': self.doc.needs_pass,
-
+                'last_processed': datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             })
             data.update({
                 'toc': self.doc.get_toc(),
@@ -131,7 +131,6 @@ class PDF_TTS:
         data.update({
             'text_list': [i[0] for i in self.text_audio_map] if self.text_audio_map else [],
             'removals': self.removals,
-            'last_updated': datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         })
 
         print(f"DATA: Saving {self.output_filepath_json}")

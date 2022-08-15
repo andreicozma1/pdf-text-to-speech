@@ -1,8 +1,9 @@
 // ============================================================
+// PlayBack Controls
+const uploads_list = document.getElementById("uploads_list");
+
+// ============================================================
 // Main Controls
-
-
-
 const btn_process = document.getElementById("btn_process");
 const btn_clean = document.getElementById("btn_clean");
 
@@ -16,6 +17,8 @@ controls_box.hidden = data.info.is_processed === false;
 
 const btn_play = document.getElementById("btn_play");
 
+const playback_rate_text = document.getElementById("playbackRateText");
+const playback_rate = document.getElementById("playbackRate");
 // ============================================================
 // Progress Indicators
 const progress_text = document.getElementById("progressText")
@@ -44,9 +47,9 @@ btn_clean.disabled = data.info.is_processed === false;
 // ============================================================
 // Audio Player
 let audio_index = 0
-
 const audio_source = document.getElementById("audio_source");
-audio_source.removeEventListener("loadeddata", () => { });
+audio_source.removeEventListener("loadeddata", () => {
+});
 
 if (data.info.is_processed === true) {
     audio_source.src = get_stream_url(audio_index);
@@ -61,6 +64,7 @@ function process() {
     parser.searchParams.set("action", "process");
     window.location = parser.href;
 }
+
 function clean() {
     console.log("Cleaning...");
     const parser = new URL(window.location);
@@ -114,13 +118,13 @@ function get_stream_url(index) {
     return parser.href;
 }
 
-function handle_formatting(elem, text){
+function handle_formatting(elem, text) {
     // empty class list
     elem.removeAttribute('class')
     for (let i in formatting) {
         const class_name = formatting[i]
         const tag = `<${class_name}>`
-    
+
         if (text.includes(tag)) {
             text = text.replaceAll(tag, "");
             elem.classList.add(`${class_name}`);
@@ -131,23 +135,27 @@ function handle_formatting(elem, text){
 }
 
 
-function setProgress() {
+function updateProgress() {
     let text = data.text_list[audio_index]
 
     console.log(`Setting progress: [${audio_index}] - ${text}`);
-
     progress_text.innerText = `${audio_index}/${data.text_list.length - 1}`
     progress_range.value = audio_index
     handle_formatting(current_text, text)
-    let active_text = document.getElementById("text_" + audio_index)
-    // add class to active text
-    active_text.classList.add("active")
+    const active_text = document.getElementById("text_" + audio_index)
+    active_text.classList.add("ACTIVE")
 }
 
-function load_current_index(play) {
-    setProgress();
+function updatePlaybackRate() {
+    audio_source.playbackRate = playback_rate.value;
+    playback_rate_text.innerText = `${audio_source.playbackRate}x`
+}
+
+function load_current_index() {
+    updateProgress();
     audio_source.src = get_stream_url(audio_index)
     audio_source.load();
+    updatePlaybackRate()
 }
 
 function seek_to_index(index, forward) {
@@ -181,7 +189,7 @@ function seek_to_index(index, forward) {
 
     let curr_active = document.getElementById("text_" + audio_index)
     // remove class from active text
-    curr_active.classList.remove("active")
+    curr_active.classList.remove("ACTIVE")
     audio_index = index
     console.log("Seeking to: " + audio_index);
     let autoplay = !audio_source.paused
@@ -217,8 +225,8 @@ function prev() {
 
 document.body.onkeyup = function (e) {
     if ((e.key == " " ||
-        e.code == "Space" ||
-        e.keyCode == 32) &&
+            e.code == "Space" ||
+            e.keyCode == 32) &&
         e.ctrlKey) {
         toggle_play()
     }
@@ -236,24 +244,24 @@ document.body.onkeyup = function (e) {
     }
 }
 
-audio_source.addEventListener('ended', function (ev) {
+audio_source.addEventListener('ended', function () {
     next();
     audio_source.play();
+});
+
+playback_rate.addEventListener('change', function () {
+    updatePlaybackRate();
 });
 
 // ============================================================
 // ============================================================
 
-if (data.text_list.length > 0) {
+if (data.text_list && data.text_list.length > 0) {
     progress_range.max = data.text_list.length - 1;
     const paras = [document.createElement("p")];
     // Append link elements to the textbox
     for (let i = 0; i < data.text_list.length; i++) {
         const text = data.text_list[i];
-        // if (text === "\n") {
-        //     continue;
-        // }
- 
         const link = document.createElement("a");
         link.onclick = function () {
             seek_to_index(i);
@@ -262,18 +270,18 @@ if (data.text_list.length > 0) {
         handle_formatting(link, text)
 
         paras[paras.length - 1].appendChild(link);
-        
+
         if (text[text.length - 1] === "\n") {
             paras.push(document.createElement("p"));
         }
-        // textbox.appendChild(document.createElement("br"));
     }
-    
+
     for (let i = 0; i < paras.length; i++) {
         textbox.appendChild(paras[i]);
     }
 
-    setProgress();
+    load_current_index();
 }
+
 
 // TODO: Show TOC from data.info.toc
