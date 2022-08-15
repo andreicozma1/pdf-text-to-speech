@@ -1,24 +1,46 @@
 import os
 import traceback
-from flask import Flask, render_template, request, make_response, redirect, url_for, send_from_directory, Response
+from flask import Flask, render_template, request, make_response, \
+    redirect, url_for, send_from_directory, Response, session
 import secrets
-
-# import sys
-# sys.path.append('src/lib')
-
-ALLOWED_EXTENSIONS = {'pdf'}
-UPLOAD_FOLDER = 'uploads'
-
+from dotenv import load_dotenv
 from src.lib import PDF_TTS
+from pathlib import Path
+import hashlib
+
+load_dotenv()
+
+# Check if the secret key exists in the environment
+if 'FLASK_DEBUG' not in os.environ:
+    raise Exception(
+        'FLASK_DEBUG not found in environment. Please set this key in your environment, or use the .env file.')
+if 'TEMPLATES_AUTO_RELOAD' not in os.environ:
+    raise Exception(
+        'TEMPLATES_AUTO_RELOAD not found in environment. Please set this key in your environment, or use the .env file.')
+if 'SECRET_KEY' not in os.environ:
+    raise Exception(
+        'SECRET_KEY not found in environment. Please set this key in your environment, or use the .env file.')
+if 'UPLOAD_FOLDER' not in os.environ:
+    raise Exception(
+        'UPLOAD_FOLDER not found in environment. Please set this key in your environment, or use the .env file.')
 
 app = Flask(__name__)
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-app.config['TEMPLATES_AUTO_RELOAD'] = True
+app.config['SECRET_KEY'] = os.environ['SECRET_KEY']
+app.config['TEMPLATES_AUTO_RELOAD'] = os.environ['TEMPLATES_AUTO_RELOAD']
+app.config['UPLOAD_FOLDER'] = os.environ['UPLOAD_FOLDER']
+app.config['ALLOWED_EXTENSIONS'] = {'pdf'}
+
+print("=" * 80)
+print("FLASK_DEBUG = " + os.environ['FLASK_DEBUG'])
+print("TEMPLATES_AUTO_RELOAD = " + app.config['TEMPLATES_AUTO_RELOAD'])
+print("UPLOAD_FOLDER = " + app.config['UPLOAD_FOLDER'])
+print("ALLOWED_EXTENSIONS = " + str(app.config['ALLOWED_EXTENSIONS']))
+print("=" * 80)
 
 
 def allowed_file(filename):
     return '.' in filename and \
-           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+           filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
 
 
 def rrmdir(path):
@@ -31,10 +53,9 @@ def rrmdir(path):
 
 
 @app.route("/")
-def index(message="Upload a PDF file to get started."):
-    # get data from request 'message'
+def index():
     print("=" * 80)
-    return render_template("./index.html", message=message)
+    return render_template("./index.html", message="Upload a PDF file to get started.")
 
 
 @app.route('/<upload_id>')
@@ -68,25 +89,29 @@ def player(upload_id):
     fname_txt = fname_pdf.replace('.pdf', '.txt')
     p = PDF_TTS(os.path.join(upload_dir_path, fname_pdf))
 
+    print(session['uploads'])
+
+    try:
+        data = p.get_data()
+    except Exception:
+        traceback.print_exc()
+        r = render_template("./index.html", dialog="Error: Failed to get data for this document")
+        return r
+
     if not query:
-        try:
-            data = p.get_data()
-        except Exception:
-            traceback.print_exc()
-            r = render_template("./index.html", message="Error: Failed to get data for this document")
-            return r
-        return render_template("./index.html", id=upload_id, data=data)
+        return render_template("./index.html", id=upload_id, data=data, message="Upload New Document:")
 
     # check if query is valid
     valid_queries = ['process', 'stream', 'download_pdf', 'download_txt', 'clean', 'remove_doc']
     if query not in valid_queries:
-        return render_template("./index.html", message="Error: Invalid query")
+        return render_template("./index.html", dialog="Error: Invalid query")
+
     elif query == 'process':
         try:
             p.process()
         except Exception:
             traceback.print_exc()
-            r = render_template("./index.html", message="Error: Failed to process PDF file")
+            r = render_template("./index.html", dialog="Error: Failed to process PDF file")
             return r
         return redirect(upload_id)
     elif query == 'clean':
@@ -94,24 +119,26 @@ def player(upload_id):
             p.clean()
         except Exception:
             traceback.print_exc()
-            r = render_template("./index.html", message="Error: Failed to clean processed state for PDF file")
+            r = render_template("./index.html", id=upload_id, data=data,
+                                message="Error: Failed to clean processed state for PDF file")
             return r
         return redirect(upload_id)
     elif query == 'stream':
         stream_index = request.args.get('index')
         if not stream_index or not stream_index.isdigit():
-            r = render_template("./index.html", message="Required integer `index` query param not specified")
+            r = render_template("./index.html", id=upload_id, data=data,
+                                dialog="Required integer `index` query param not specified")
             return r
         stream_index = int(stream_index)
         return Response(p.stream_one(stream_index), mimetype="audio/x-wav")
     elif query == 'download_pdf':
         if not os.path.exists(os.path.join(upload_dir_path, fname_pdf)):
-            r = render_template("./index.html", message="Error: PDF file not found")
+            r = render_template("./index.html", id=upload_id, data=data, dialog="Error: PDF file not found")
             return r
         return send_from_directory(upload_dir_path, fname_pdf, as_attachment=True)
     elif query == 'download_txt':
         if not os.path.exists(os.path.join(upload_dir_path, fname_txt)):
-            r = render_template("./index.html", message="Error: TXT file not found")
+            r = render_template("./index.html", id=upload_id, data=data, dialog="Error: TXT file not found")
             return r
         return send_from_directory(upload_dir_path, fname_txt, as_attachment=True)
     elif query == 'remove_doc':
@@ -139,9 +166,19 @@ def upload():
         return r
 
     if f and allowed_file(f.filename):
-        upload_id = secrets.token_urlsafe(36)
-        os.makedirs(os.path.join(app.config['UPLOAD_FOLDER'], upload_id))
-        f.save(os.path.join(app.config['UPLOAD_FOLDER'], upload_id, f.filename))
+        # upload_id = secrets.token_urlsafe(36)
+        filebytes = f.read()
+        upload_id = hashlib.md5(filebytes).hexdigest()
+
+        f_save_path = os.path.join(app.config['UPLOAD_FOLDER'], upload_id)
+        if not os.path.exists(f_save_path):
+            os.makedirs(f_save_path)
+            f.seek(0)
+            f.save(os.path.join(app.config['UPLOAD_FOLDER'], upload_id, f.filename))
+
+        current_uploads = session.get('uploads', {})
+        current_uploads[upload_id] = f.filename
+        session['uploads'] = current_uploads
         return make_response(redirect(url_for('player', upload_id=upload_id, action='process')))
     else:
         r = render_template("./index.html", message="Upload file not allowed")
@@ -149,4 +186,5 @@ def upload():
 
 
 if __name__ == "__main__":
-    app.run(debug=True, use_reloader=True, threaded=True)
+    # app.run(debug=True, use_reloader=True, threaded=True
+    app.run()

@@ -1,14 +1,7 @@
 // ============================================================
 // Main Controls
 
-if (!data) {
-// Throw exception if no data is found
-    throw new Error("API returned no `data` for the requested document.");
-}
 
-if (!data.info) {
-    throw new Error("API returned data with no `info` field for the requested document.");
-}
 
 const btn_process = document.getElementById("btn_process");
 const btn_clean = document.getElementById("btn_clean");

@@ -123,6 +123,9 @@ class PDF_TTS:
 
         data['info'].update({'file_name': os.path.basename(self.filename),
                              'is_processed': self.is_processed(),
+                             'num_seqs': len(self.text_audio_map) if self.text_audio_map else 0,
+                             'num_seqs_cached': len(
+                                 [x for x in self.text_audio_map if x[1] is not None]) if self.text_audio_map else 0,
                              'is_open': bool(self.doc and not self.doc.is_closed)})
 
         data.update({
@@ -264,16 +267,10 @@ class PDF_TTS:
                 if len(text_list_audio_loaded) == len(self.text_audio_map):
                     self.text_audio_map = text_list_audio_loaded
                 else:
-                    print(
-                        "WARNING: Loaded text list audio is different length than original text list audio")
                     # remove the old file
+                    print("WARNING: Loaded text list audio is different length "
+                          "than original text list audio")
                     os.remove(self.output_filepath_txt)
-                print(
-                    f" - Loaded initial cache from: `{self.output_filepath_txt}`")
-                print(
-                    f" - Total number of text sequences: {len(self.text_audio_map)}")
-                print(
-                    f" - Number of pre-loaded audio sequences: {len([x for x in self.text_audio_map if x[1] is not None])}")
 
         self.save_text_audio_seqs(overwrite=False)
         data = self.get_data()

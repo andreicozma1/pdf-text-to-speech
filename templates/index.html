@@ -27,13 +27,28 @@
             display: flex;
             flex-direction: column;
             text-align: left;
-            margin: 1.5em;
         }
 
         .slider {
             display: block;
             width: 80%;
             margin: 1em auto;
+        }
+
+        .sm {
+            width: 30%
+        }
+
+        .md {
+            width: 60%;
+        }
+
+        .lg {
+            width: 80%;
+        }
+
+        .xl {
+            width: 100%;
         }
 
         {# FORMATTING OF TEXT AREAS #}
@@ -43,6 +58,7 @@
         }
 
         .CENTER {
+            margin: auto;
             text-align: center;
         }
 
@@ -65,33 +81,54 @@
 </head>
 <body>
 <div class="CENTER">
+    <hr class="dashed"/>
     <h1>PDF Text-To-Speech</h1>
-
     <hr class="dashed"/>
 
     {% if message is defined and message %}
-
         <p>{{ message }}</p>
-        <hr class="dashed"/>
-
+    {% else %}
+        <p>Upload New Document:</p>
     {% endif %}
 
-    {% if data is defined and data and id is defined and id %}
+    <div>
+        <form
+                action="http://localhost:5000/upload"
+                method="POST"
+                enctype="multipart/form-data"
+                class="center"
+                style="margin: 1em;"
+        >
+            <input type="file" name="file"/>
+            <input type="submit"/>
+        </form>
 
-        <p>Document ID: {{ id }}</p>
+        <hr class="dashed md"/>
+        <h3>My Documents (Current Session):</h3>
+    </div>
+
+
+    {% if data is defined and data and id is defined and id %}
+        <hr class="dashed"/>
+
         <p>File Name: {{ data.info.file_name }}</p>
+        <p>File Hash: {{ id }}</p>
 
         {% if data.info.is_processed %}
-            <p>Page Count: <b>{{ data.info.page_count }}</b></p>
-            <p>Has Links? <b>{{ data.info.has_links }}</b></p>
-            <p>Has Annotations? <b>{{ data.info.has_annots }}</b></p>
-            <p>Is Encrypted? <b>{{ data.info.is_encrypted }}</b></p>
-            <p>Is Password Protected? <b>{{ data.info.is_password_protected }}</b></p>
+            <p>Document successfully processed!</p>
+        {% else %}
+            <p>Please process the file to continue ...</p>
         {% endif %}
 
-        <p>Is Open? <b>{{ data.info.is_open }}</b></p>
-        <p>Is Processed? <b>{{ data.info.is_processed }}</b></p>
+        {% if data.info.is_processed %}
+            <p><b>{{ data.info.page_count }} total pages</b> with <b>{{ data.info.num_seqs_cached }}</b> text-audio
+                sequences already cached out of <b>{{ data.info.num_seqs }}</b> total</p>
+        {% endif %}
 
+        {#            <p>Has Links? <b>{{ data.info.has_links }}</b></p>#}
+        {#            <p>Has Annotations? <b>{{ data.info.has_annots }}</b></p>#}
+        {#            <p>Is Encrypted? <b>{{ data.info.is_encrypted }}</b></p>#}
+        {#            <p>Is Password Protected? <b>{{ data.info.is_password_protected }}</b></p>#}
         <div>
             <button onclick="process()" id="btn_process">Process</button>
             <button onclick="clean()" id="btn_clean">Clean</button>
@@ -110,8 +147,8 @@
             <button onclick="remove()" id="btn_remove">Remove Document</button>
         </div>
 
-        <hr class="dashed"/>
         <div id="controlsBox">
+            <hr class="dashed lg"/>
             <p id="progressText"></p>
             <button onclick="prev()">Prev</button>
             <button onclick="toggle_play()" id="btn_play">Play</button>
@@ -130,36 +167,33 @@
                 Your browser does not support the audio element.
             </audio>
             <p id="currentText"></p>
-            <hr class="dashed"/>
-        </div>
         </div>
 
-        <div id="textbox"></div>
+        <hr class="dashed lg"/>
+        </div>
+
+        <div id="textbox" class="lg CENTER"></div>
 
         <script>
-            const data = {{ data| tojson | safe}}
-                console.log(data)
+            const data =
+            {{ data| tojson | safe}}
+            if (!data) {
+                throw new Error("API returned no `data` for the requested document.");
+            }
+            if (!data.info) {
+                throw new Error("API returned data with no `info` field for the requested document.");
+            }
+            console.log(data)
+
+            let dialog = `{{ dialog | safe }}`
+            if (!dialog) {
+                dialog = "";
+            } else {
+                alert(dialog)
+            }
+            console.log(dialog)
         </script>
         <script src="{{ url_for('static', filename='scripts.js') }}"></script>
-
-    {% else %}
-
-        <form
-                action="http://localhost:5000/upload"
-                method="POST"
-                enctype="multipart/form-data"
-                class="center"
-                style="margin: 1em;"
-        >
-            <input type="file" name="file"/>
-            <input type="submit"/>
-        </form>
-
-        <div id="previousUploads">
-        <h2>Your previously uploaded documents in this session</h2>
-
-        </div>
-
     {% endif %}
 </body>
 </html>
