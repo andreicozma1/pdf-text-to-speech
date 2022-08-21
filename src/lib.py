@@ -48,9 +48,9 @@ class PDF_TTS:
         self.remove_digits_only_lines = True
         self.remove_urls_only_lines = True
 
-        self.skip_parentheses = False
+        self.skip_parentheses = True
         self.skip_brackets = True
-        self.skip_braces = False
+        self.skip_braces = True
         self.skip_only_if_digits_inside = True
 
         sampleRate = 24000
@@ -139,12 +139,13 @@ class PDF_TTS:
 
     def filter(self, text):
         # text = text.strip()
+        text_stripped = text.strip()
         if not self.skip_only_if_digits_inside:
             re_pattern = ".*?"
         else:
             # match digits, special characters, and spaces
             re_pattern = "[^a-zA]+"
-        
+
         if self.skip_parentheses:
             text = re.sub(f"\({re_pattern}\)", "", text)
         if self.skip_brackets:
@@ -162,7 +163,7 @@ class PDF_TTS:
 
         if self.remove_urls_only_lines:
             # remove all digits
-            ntxt = re.sub("\d", "", text)
+            ntxt = re.sub("\d", "", text_stripped)
             # remove all symbols
             ntxt = re.sub("[^a-zA-Z0-9 ]", "", ntxt)
             if (ntxt.startswith("http") or
