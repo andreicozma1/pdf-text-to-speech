@@ -44,6 +44,9 @@ class PDF_TTS:
         if self.pitch < -20 or self.pitch > 20:
             raise Exception("Invalid pitch, must be between -20 and 20")
 
+        self.remove_majority_non_ascii_lines = True
+        self.remove_majority_non_ascii_ratio = 0.85
+        self.remove_symbols_and_digits_only_lines = True
         self.remove_symbols_only_lines = True
         self.remove_digits_only_lines = True
         self.remove_urls_only_lines = True
@@ -79,7 +82,10 @@ class PDF_TTS:
 
     def setup_doc(self, filename):
         # Setting up removals
-        self.removals = {'symbols_only_lines': [],
+
+        self.removals = {'remove_majority_non_ascii_lines': [],
+                         'symbols_and_digits_only_lines': [],
+                         'symbols_only_lines': [],
                          'digits_only_lines': [],
                          'urls_only_lines': []}
 
@@ -140,6 +146,8 @@ class PDF_TTS:
     def filter(self, text):
         # text = text.strip()
         text_stripped = text.strip()
+        ntxt = re.sub(r"\s+", "", text)
+
         if not self.skip_only_if_digits_inside:
             re_pattern = ".*?"
         else:
@@ -153,13 +161,36 @@ class PDF_TTS:
         if self.skip_braces:
             text = re.sub(f"\{{{re_pattern}\}}", "", text)
 
-        if self.remove_symbols_only_lines and all(i in string.punctuation for i in text.replace(" ", "")):
-            self.removals['symbols_only_lines'].append(text)
-            return None
+        # if self.remove_symbols_only_lines and all(i in string.punctuation for i in text.replace(" ", "")):
+        #     self.removals['symbols_only_lines'].append(text)
+        #     return None
 
-        if self.remove_digits_only_lines and all(i.isdigit() for i in text.replace(" ", "")):
-            self.removals['digits_only_lines'].append(text)
-            return None
+        # if self.remove_digits_only_lines and all(i.isdigit() for i in text.replace(" ", "")):
+        #     self.removals['digits_only_lines'].append(text)
+        #     return None
+
+        if self.remove_symbols_and_digits_only_lines:
+            if all((i in string.punctuation or i.isdigit()) for i in ntxt):
+                self.removals['symbols_and_digits_only_lines'].append(text)
+                return None
+
+        if self.remove_symbols_only_lines:
+            if all(i in string.punctuation for i in ntxt):
+                self.removals['symbols_only_lines'].append(text)
+                return None
+
+        if self.remove_digits_only_lines:
+            if all(i.isdigit() for i in ntxt):
+                self.removals['digits_only_lines'].append(text)
+                return None
+
+        if self.remove_majority_non_ascii_lines:
+            # Get the number of non-ascii characters in the ntxt string
+            num_ascii = len(ntxt.encode("ascii", "ignore"))
+            num_total = len(ntxt)
+            if num_ascii / num_total < self.remove_majority_non_ascii_ratio:
+                self.removals['remove_majority_non_ascii_lines'].append(text)
+                return None
 
         if self.remove_urls_only_lines:
             # remove all digits, symbols, and whitespace
