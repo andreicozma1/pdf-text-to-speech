@@ -249,7 +249,8 @@ class PDF_TTS:
                         if txt is not None:
                             txt = txt + "\n\n"
                             txt = txt.replace("  ", " ")
-                            txt = txt.replace("- ", "")
+                            txt = txt.replace("- ", "-")
+                            txt = txt.replace(" -", "-")
                             txt = txt.replace(" , ", ", ")
                             txt = txt.replace(" .", ".")
                             text_buf.append(txt)
