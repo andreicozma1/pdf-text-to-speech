@@ -50,6 +50,7 @@ class PDF_TTS:
 
         self.skip_parentheses = False
         self.skip_brackets = True
+        # TODO: skip brackets that contain only symbols and digits (references in research papers)
         self.skip_braces = False
 
         sampleRate = 24000
