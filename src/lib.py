@@ -10,6 +10,7 @@ from tqdm import tqdm
 import re
 # import simpleaudio as sa
 import io
+import string
 
 
 # print("=" * 80)
@@ -25,8 +26,8 @@ class PDF_TTS:
         self.filename = filename
         self.output_filename = os.path.basename(filename).split('.')[0]
         output_filepath = os.path.join(os.path.dirname(filename), self.output_filename)
-        self.output_filepath_txt_orig = f"{output_filepath}-original.txt"
-        self.output_filepath_txt = f"{output_filepath}.txt"
+        self.output_filepath_txt_orig = f"{output_filepath}.txt"
+        self.output_filepath_txt = f"{output_filepath}_processed.txt"
         self.output_filepath_pkl = f"{output_filepath}.pkl"
         self.output_filepath_json = f"{output_filepath}.json"
 
@@ -41,6 +42,10 @@ class PDF_TTS:
         if self.pitch < -20 or self.pitch > 20:
             raise Exception("Invalid pitch, must be between -20 and 20")
 
+        self.remove_symbols_only_lines = True
+        self.remove_digits_only_lines = True
+        self.remove_urls_only_lines = True
+        
         self.skip_brackets = False
         self.skip_braces = False
         self.skip_parentheses = False
@@ -62,18 +67,6 @@ class PDF_TTS:
         )
 
         self.removals = None
-        self.filters_folder = "./filters"
-        self.filters = {
-            'authors': {
-                'cutoff': 0.4,
-            },
-            'references': {
-                'cutoff': 0.005,
-            },
-            'custom': {
-                'cutoff': 0.4,
-            }
-        }
         self.formatting = ["BOLD", "ITALIC",
                            "UNDERLINE", "STRIKETHROUGH", "CENTER"]
 
@@ -85,29 +78,21 @@ class PDF_TTS:
         self.removals = {'parentheses': [],
                          'brackets': [],
                          'braces': [],
-                         'other': []}
-
-        # Setting up filters
-        for filter_name in self.filters:
-            filter_authors_path = os.path.join(
-                self.filters_folder, filter_name)
-            self.filters[filter_name]['items'] = []
-            if os.path.isfile(filter_authors_path):
-                with open(filter_authors_path, "r") as f:
-                    lines = [line.strip() for line in f.readlines()]
-                    for line in lines:
-                        if line != "":
-                            self.filters[filter_name]['items'].append(line)
-            else:
-                # create file
-                with open(filter_authors_path, "w") as f:
-                    pass
-            self.removals[filter_name] = []
+                         'symbols_only_lines': [],
+                         'digits_only_lines': [],
+                         'urls_only_lines': []}
 
         # Setting up document
         return fitz.Document(filename)
 
     def get_data(self):
+        if not os.path.isfile(self.output_filepath_json):
+            self.write_data()
+        with open(self.output_filepath_json, "r") as f:
+            data = json.load(f)
+        return data
+    
+    def write_data(self):
         data = self.load_data()
         if self.doc and not self.doc.is_closed:
             data['info'].update({
@@ -151,6 +136,7 @@ class PDF_TTS:
         return data
 
     def filter(self, text):
+        text = text.strip()
         if self.skip_parentheses:
             self.removals['parentheses'].append(text)
             text = re.sub("\(.*?\)", "", text)
@@ -161,35 +147,20 @@ class PDF_TTS:
             self.removals['braces'].append(text)
             text = re.sub("\{.*?\}", "", text)
 
-        sim_author = difflib.get_close_matches(
-            text, self.filters['authors']['items'], cutoff=self.filters['authors']['cutoff'])
-        sim_ref = difflib.get_close_matches(
-            text, self.filters['references']['items'], cutoff=self.filters['references']['cutoff'])
-        sim_custom = difflib.get_close_matches(
-            text, self.filters['custom']['items'], cutoff=self.filters['custom']['cutoff'])
-
-        shouldAdd = True
-        if (len(text.split()) <= 4 and len(sim_author) > 0):
-            self.removals['authors'].append(text)
-            shouldAdd = False
-
-        if (text.startswith('[') and len(sim_ref) > 0):
-            self.removals['references'].append(text)
-            shouldAdd = False
-
-        if len(sim_custom) > 0:
-            self.removals['custom'].append(text)
-            shouldAdd = False
-
-        if "".join(text.split()).isdigit() or \
-                text.startswith("http") or \
-                text.startswith("www") or \
-                len(text) == 0:
-            self.removals['other'].append(text)
-            shouldAdd = False
-
-        if not shouldAdd:
+        if self.remove_symbols_only_lines and all(i in string.punctuation for i in text.replace(" ", "")):
+            self.removals['symbols_only_lines'].append(text)
             return None
+            
+        if self.remove_digits_only_lines and all(i.isdigit() for i in text.replace(" ", "")):
+            self.removals['digits_only_lines'].append(text)
+            return None
+        
+        if self.remove_urls_only_lines and \
+                (text.startswith("http") or \
+                text.startswith("www")):
+            self.removals['urls_only_lines'].append(text)
+            return None
+
         return text
 
     def load_text_audio_seqs(self):
@@ -230,6 +201,9 @@ class PDF_TTS:
                 blocks = page.extractBLOCKS()
                 
                 for b in blocks:
+                    ###############
+                    ## VERSION 1 ##
+                    ###############
                     # txt = b[4].strip()
                     # txt = " ".join(txt.split("\n")).strip()
                     # txt = self.filter(txt)
@@ -240,7 +214,11 @@ class PDF_TTS:
                     #     text = text.replace(" , ", ", ")
                     #     text = text.replace(" .", ".")
                     #     text_buf.append(text)
-                    txt = b[4]
+                    
+                    ###############
+                    ## VERSION 2 ##
+                    ###############
+                    txt = b[4].strip()
                     txt = txt.replace("\n ", "\n")
                     for txt in txt.split("\n\n"):
                         txt = " ".join(txt.split("\n"))
@@ -286,9 +264,8 @@ class PDF_TTS:
                     os.remove(self.output_filepath_txt)
 
         self.save_text_audio_seqs(overwrite=False)
-        data = self.get_data()
+        self.write_data()
         self.doc.close()
-        return data
 
     def stream_one(self, index):
         if not self.is_processed():
@@ -323,6 +300,8 @@ class PDF_TTS:
     def clean(self):
         if os.path.exists(self.output_filepath_txt):
             os.remove(self.output_filepath_txt)
+        if os.path.exists(self.output_filepath_txt_orig):
+            os.remove(self.output_filepath_txt_orig)
         if os.path.exists(self.output_filepath_pkl):
             os.remove(self.output_filepath_pkl)
         if os.path.exists(self.output_filepath_json):

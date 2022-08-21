@@ -55,15 +55,3 @@ flask run
 ## Interface:
 
 ![img.png](img.png)
-
-## Text Filters (WIP):
-
-Filters are used to remove certain patterns of text while processing the PDF file, using `difflib` to compute the
-similarity ratio between the text and the filter.  
-Currently there are 3 filters in the following locations:
-
-- Authors: `./filters/authors`
-- References: `./filters/references`
-- Custom: `./filters/custom`
-
-Note: Each line in these files is its own filter.

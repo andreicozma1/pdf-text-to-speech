@@ -88,6 +88,7 @@ def player(upload_id):
 
     fname_pdf = pdf_files[0]
     fname_txt = fname_pdf.replace('.pdf', '.txt')
+    fname_txt_processed = fname_txt.replace('.txt', '_processed.txt')
     p = PDF_TTS(os.path.join(upload_dir_path, fname_pdf))
 
     try:
@@ -144,11 +145,11 @@ def player(upload_id):
             return r
         return send_from_directory(upload_dir_path, fname_pdf, as_attachment=True)
     elif query == 'download_txt':
-        if not os.path.exists(os.path.join(upload_dir_path, fname_txt)):
+        if not os.path.exists(os.path.join(upload_dir_path, fname_txt_processed)):
             r = render_template("./index.html", id=upload_id, data=data, uploads=uploads,
                                 dialog="Error: TXT file not found")
             return r
-        return send_from_directory(upload_dir_path, fname_txt, as_attachment=True)
+        return send_from_directory(upload_dir_path, fname_txt_processed, as_attachment=True)
     elif query == 'remove_doc':
         try:
             rrmdir(upload_dir_path)
