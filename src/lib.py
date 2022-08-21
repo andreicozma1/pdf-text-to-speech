@@ -25,7 +25,8 @@ class PDF_TTS:
     def __init__(self, filename) -> None:
         self.filename = filename
         self.output_filename = os.path.basename(filename).split('.')[0]
-        output_filepath = os.path.join(os.path.dirname(filename), self.output_filename)
+        output_filepath = os.path.join(
+            os.path.dirname(filename), self.output_filename)
         self.output_filepath_txt_orig = f"{output_filepath}.txt"
         self.output_filepath_txt = f"{output_filepath}_processed.txt"
         self.output_filepath_pkl = f"{output_filepath}.pkl"
@@ -37,7 +38,8 @@ class PDF_TTS:
 
         # Validation of configuration options
         if self.speaking_rate < 0.25 or self.speaking_rate > 4.0:
-            raise Exception("Invalid speaking rate, must be between 0.25 and 4.0")
+            raise Exception(
+                "Invalid speaking rate, must be between 0.25 and 4.0")
 
         if self.pitch < -20 or self.pitch > 20:
             raise Exception("Invalid pitch, must be between -20 and 20")
@@ -45,15 +47,16 @@ class PDF_TTS:
         self.remove_symbols_only_lines = True
         self.remove_digits_only_lines = True
         self.remove_urls_only_lines = True
-        
-        self.skip_brackets = False
-        self.skip_braces = False
+
         self.skip_parentheses = False
+        self.skip_brackets = True
+        self.skip_braces = False
 
         sampleRate = 24000
         bitsPerSample = 16
         channels = 1
-        self.wav_header = self.genWavHeader(sampleRate, bitsPerSample, channels)
+        self.wav_header = self.genWavHeader(
+            sampleRate, bitsPerSample, channels)
 
         self.ssml_gender = texttospeech.SsmlVoiceGender.MALE
         self.audio_encoding = texttospeech.AudioEncoding.LINEAR16
@@ -75,10 +78,7 @@ class PDF_TTS:
 
     def setup_doc(self, filename):
         # Setting up removals
-        self.removals = {'parentheses': [],
-                         'brackets': [],
-                         'braces': [],
-                         'symbols_only_lines': [],
+        self.removals = {'symbols_only_lines': [],
                          'digits_only_lines': [],
                          'urls_only_lines': []}
 
@@ -91,7 +91,7 @@ class PDF_TTS:
         with open(self.output_filepath_json, "r") as f:
             data = json.load(f)
         return data
-    
+
     def write_data(self):
         data = self.load_data()
         if self.doc and not self.doc.is_closed:
@@ -125,7 +125,8 @@ class PDF_TTS:
         return data
 
     def load_data(self):
-        print(f"DATA: Loading {self.output_filepath_json} [Exists={os.path.isfile(self.output_filepath_json)}]")
+        print(
+            f"DATA: Loading {self.output_filepath_json} [Exists={os.path.isfile(self.output_filepath_json)}]")
         data = {'info': {}}
         if os.path.isfile(self.output_filepath_json):
             try:
@@ -138,26 +139,23 @@ class PDF_TTS:
     def filter(self, text):
         text = text.strip()
         if self.skip_parentheses:
-            self.removals['parentheses'].append(text)
             text = re.sub("\(.*?\)", "", text)
         if self.skip_brackets:
-            self.removals['brackets'].append(text)
             text = re.sub("\[.*?\]", "", text)
         if self.skip_braces:
-            self.removals['braces'].append(text)
             text = re.sub("\{.*?\}", "", text)
 
         if self.remove_symbols_only_lines and all(i in string.punctuation for i in text.replace(" ", "")):
             self.removals['symbols_only_lines'].append(text)
             return None
-            
+
         if self.remove_digits_only_lines and all(i.isdigit() for i in text.replace(" ", "")):
             self.removals['digits_only_lines'].append(text)
             return None
-        
+
         if self.remove_urls_only_lines and \
-                (text.startswith("http") or \
-                text.startswith("www")):
+                (text.startswith("http") or
+                 text.startswith("www")):
             self.removals['urls_only_lines'].append(text)
             return None
 
@@ -199,7 +197,7 @@ class PDF_TTS:
                 text_buf.append(buf_page_num)
                 page = page.get_textpage()
                 blocks = page.extractBLOCKS()
-                
+
                 for b in blocks:
                     ###############
                     ## VERSION 1 ##
@@ -214,7 +212,7 @@ class PDF_TTS:
                     #     text = text.replace(" , ", ", ")
                     #     text = text.replace(" .", ".")
                     #     text_buf.append(text)
-                    
+
                     ###############
                     ## VERSION 2 ##
                     ###############
