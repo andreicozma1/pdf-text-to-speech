@@ -19,6 +19,9 @@ const btn_play = document.getElementById("btn_play");
 
 const playback_rate_text = document.getElementById("playbackRateText");
 const playback_rate = document.getElementById("playbackRate");
+const rateSlower = document.getElementById("rateSlower");
+const rateFaster = document.getElementById("rateFaster");
+const rateDefault = document.getElementById("rateDefault");
 // ============================================================
 // Progress Indicators
 const progress_text = document.getElementById("progressText")
@@ -52,7 +55,7 @@ btn_clean.disabled = data.info.is_processed === false;
 // Audio Player
 let audio_index = 0
 const audio_source = document.getElementById("audio_source");
-audio_source.removeEventListener("loadeddata", () => {});
+audio_source.removeEventListener("loadeddata", () => { });
 
 if (data.info.is_processed === true) {
     audio_source.src = get_stream_url(audio_index);
@@ -151,7 +154,7 @@ function updateProgress() {
         active_text.scrollIntoView({
             block: "center",
             behavior: 'smooth'
-       });
+        });
     }
 }
 
@@ -238,8 +241,8 @@ function prev() {
 
 document.body.onkeyup = function (e) {
     if ((e.key == " " ||
-            e.code == "Space" ||
-            e.keyCode == 32) &&
+        e.code == "Space" ||
+        e.keyCode == 32) &&
         e.ctrlKey) {
         toggle_play()
     }
@@ -263,12 +266,29 @@ audio_source.addEventListener('ended', function () {
 });
 
 // playback_rate.addEventListener('change', function () {
-    // updatePlaybackRate();
+// updatePlaybackRate();
 // });
+
 
 playback_rate.addEventListener('input', function () {
     updatePlaybackRate();
 });
+
+rateSlower.addEventListener('click', function () {
+    playback_rate.stepDown()
+    updatePlaybackRate();
+});
+
+rateFaster.addEventListener('click', function () {
+    playback_rate.stepUp()
+    updatePlaybackRate();
+});
+
+rateDefault.addEventListener('click', function () {
+    playback_rate.value = 1.2;
+    updatePlaybackRate();
+});
+
 
 // ============================================================
 // ============================================================
