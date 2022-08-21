@@ -32,12 +32,6 @@
             margin: auto;
         }
 
-        #controlsBox div {
-            margin: 1em;
-            display: flex;
-            justify-content: space-between;
-        }
-        
         #controlsBox div * {
             margin: 0;
             display: inline;
@@ -195,9 +189,12 @@
         </div>
 
         <div id="controlsBox" class="lg CENTER box background">
-            <p id="currentText"></p>
-            <hr class="dashed"/>
+            <div>
+                <p id="currentText"></p>
+            </div>
 
+            <hr class="dashed"/>
+       
             <div style="justify-content:center;">
                 <button onclick="prev()">Prev</button>
                 <button onclick="toggle_play()" id="btn_play">Play</button>
