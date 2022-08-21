@@ -25,6 +25,7 @@ class PDF_TTS:
         self.filename = filename
         self.output_filename = os.path.basename(filename).split('.')[0]
         output_filepath = os.path.join(os.path.dirname(filename), self.output_filename)
+        self.output_filepath_txt_orig = f"{output_filepath}-original.txt"
         self.output_filepath_txt = f"{output_filepath}.txt"
         self.output_filepath_pkl = f"{output_filepath}.pkl"
         self.output_filepath_json = f"{output_filepath}.json"
@@ -40,8 +41,8 @@ class PDF_TTS:
         if self.pitch < -20 or self.pitch > 20:
             raise Exception("Invalid pitch, must be between -20 and 20")
 
-        self.skip_brackets = True
-        self.skip_braces = True
+        self.skip_brackets = False
+        self.skip_braces = False
         self.skip_parentheses = False
 
         sampleRate = 24000
@@ -218,26 +219,39 @@ class PDF_TTS:
 
         text_buf = []
         page: fitz.Page
-        for page in tqdm(self.doc):
-            label = page.get_label()
-            label = f' ({label})' if label != '' else ''
-            buf_page_num = f"\n<CENTER><UNDERLINE><BOLD>PAGE #{page.number + 1}{label}<BOLD><UNDERLINE><CENTER>\n\n"
+        with open(self.output_filepath_txt_orig, "w") as f:
+            for page in tqdm(self.doc):
+                label = page.get_label()
+                label = f' ({label})' if label != '' else ''
+                buf_page_num = f"\n<CENTER><UNDERLINE><BOLD>PAGE #{page.number + 1}{label}<BOLD><UNDERLINE><CENTER>\n\n"
 
-            text_buf.append(buf_page_num)
-            page = page.get_textpage()
-            blocks = page.extractBLOCKS()
-            for b in blocks:
-                txt = b[4].strip()
-                txt = " ".join(txt.split("\n")).strip()
-                txt = self.filter(txt)
-                if txt is not None:
-                    text = txt + "\n\n"
-                    text = text.replace("  ", " ")
-                    text = text.replace("- ", "")
-                    text = text.replace(" , ", ", ")
-                    text = text.replace(" .", ".")
-
-                    text_buf.append(text)
+                text_buf.append(buf_page_num)
+                page = page.get_textpage()
+                blocks = page.extractBLOCKS()
+                
+                for b in blocks:
+                    # txt = b[4].strip()
+                    # txt = " ".join(txt.split("\n")).strip()
+                    # txt = self.filter(txt)
+                    # if txt is not None:
+                    #     text = txt + "\n\n"
+                    #     text = text.replace("  ", " ")
+                    #     text = text.replace("- ", "")
+                    #     text = text.replace(" , ", ", ")
+                    #     text = text.replace(" .", ".")
+                    #     text_buf.append(text)
+                    txt = b[4]
+                    txt = txt.replace("\n ", "\n")
+                    for txt in txt.split("\n\n"):
+                        txt = " ".join(txt.split("\n"))
+                        txt = self.filter(txt)
+                        if txt is not None:
+                            txt = txt + "\n\n"
+                            txt = txt.replace("  ", " ")
+                            txt = txt.replace("- ", "")
+                            txt = txt.replace(" , ", ", ")
+                            txt = txt.replace(" .", ".")
+                            text_buf.append(txt)
 
         with open(self.output_filepath_txt, "w") as f:
             for item in text_buf:
