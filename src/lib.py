@@ -50,8 +50,8 @@ class PDF_TTS:
 
         self.skip_parentheses = False
         self.skip_brackets = True
-        # TODO: skip brackets that contain only symbols and digits (references in research papers)
         self.skip_braces = False
+        self.skip_only_if_digits_inside = True
 
         sampleRate = 24000
         bitsPerSample = 16
@@ -138,13 +138,19 @@ class PDF_TTS:
         return data
 
     def filter(self, text):
-        text = text.strip()
+        # text = text.strip()
+        if not self.skip_only_if_digits_inside:
+            re_pattern = ".*?"
+        else:
+            # match digits, special characters, and spaces
+            re_pattern = "[^a-zA]+"
+        
         if self.skip_parentheses:
-            text = re.sub("\(.*?\)", "", text)
+            text = re.sub(f"\({re_pattern}\)", "", text)
         if self.skip_brackets:
-            text = re.sub("\[.*?\]", "", text)
+            text = re.sub(f"\[{re_pattern}\]", "", text)
         if self.skip_braces:
-            text = re.sub("\{.*?\}", "", text)
+            text = re.sub(f"\{{{re_pattern}\}}", "", text)
 
         if self.remove_symbols_only_lines and all(i in string.punctuation for i in text.replace(" ", "")):
             self.removals['symbols_only_lines'].append(text)
@@ -154,33 +160,17 @@ class PDF_TTS:
             self.removals['digits_only_lines'].append(text)
             return None
 
-        if self.remove_urls_only_lines and \
-                (text.startswith("http") or
-                 text.startswith("www")):
-            self.removals['urls_only_lines'].append(text)
-            return None
+        if self.remove_urls_only_lines:
+            # remove all digits
+            ntxt = re.sub("\d", "", text)
+            # remove all symbols
+            ntxt = re.sub("[^a-zA-Z0-9 ]", "", ntxt)
+            if (ntxt.startswith("http") or
+                    ntxt.startswith("www")):
+                self.removals['urls_only_lines'].append(text)
+                return None
 
         return text
-
-    def load_text_audio_seqs(self):
-        print("TEXT-AUDIO-SEQS: Loading ...")
-
-        if os.path.isfile(self.output_filepath_pkl):
-            with open(self.output_filepath_pkl, "rb") as f:
-                return pickle.load(f)
-        else:
-            return None
-
-    def save_text_audio_seqs(self, overwrite=False):
-        print("TEXT-AUDIO-SEQS: Saving ...")
-        if overwrite or not os.path.exists(self.output_filepath_pkl):
-            with open(self.output_filepath_pkl, "wb") as f:
-                pickle.dump(self.text_audio_map, f)
-            print(
-                f" - Saved text_audio_map (overwrite={overwrite}): `{self.output_filepath_pkl}`")
-
-    def is_processed(self):
-        return self.text_audio_map is not None
 
     def process(self):
         print(f"PROCESSING: {self.output_filename}")
@@ -217,9 +207,13 @@ class PDF_TTS:
                     ###############
                     ## VERSION 2 ##
                     ###############
-                    txt = b[4].strip()
+                    txt = b[4]
+                    f.write(txt)
+                    # txt = txt.strip()
                     txt = txt.replace("\n ", "\n")
-                    for txt in txt.split("\n\n"):
+
+                    doublesplit = txt.split("\n\n")
+                    for txt in doublesplit:
                         txt = " ".join(txt.split("\n"))
                         txt = self.filter(txt)
                         if txt is not None:
@@ -296,16 +290,6 @@ class PDF_TTS:
         audio_io = io.BytesIO(audio)
         return audio_io.read()
 
-    def clean(self):
-        if os.path.exists(self.output_filepath_txt):
-            os.remove(self.output_filepath_txt)
-        if os.path.exists(self.output_filepath_txt_orig):
-            os.remove(self.output_filepath_txt_orig)
-        if os.path.exists(self.output_filepath_pkl):
-            os.remove(self.output_filepath_pkl)
-        if os.path.exists(self.output_filepath_json):
-            os.remove(self.output_filepath_json)
-
     def genWavHeader(self, sampleRate, bitsPerSample, channels):
         datasize = 2000 * 10 ** 6
         # (4byte) Marks file as RIFF
@@ -335,3 +319,33 @@ class PDF_TTS:
         # (4byte) Data size in bytes
         o += (datasize).to_bytes(4, 'little')
         return o
+
+    def is_processed(self):
+        return self.text_audio_map is not None
+
+    def load_text_audio_seqs(self):
+        print("TEXT-AUDIO-SEQS: Loading ...")
+
+        if os.path.isfile(self.output_filepath_pkl):
+            with open(self.output_filepath_pkl, "rb") as f:
+                return pickle.load(f)
+        else:
+            return None
+
+    def save_text_audio_seqs(self, overwrite=False):
+        print("TEXT-AUDIO-SEQS: Saving ...")
+        if overwrite or not os.path.exists(self.output_filepath_pkl):
+            with open(self.output_filepath_pkl, "wb") as f:
+                pickle.dump(self.text_audio_map, f)
+            print(
+                f" - Saved text_audio_map (overwrite={overwrite}): `{self.output_filepath_pkl}`")
+
+    def clean(self):
+        if os.path.exists(self.output_filepath_txt):
+            os.remove(self.output_filepath_txt)
+        if os.path.exists(self.output_filepath_txt_orig):
+            os.remove(self.output_filepath_txt_orig)
+        if os.path.exists(self.output_filepath_pkl):
+            os.remove(self.output_filepath_pkl)
+        if os.path.exists(self.output_filepath_json):
+            os.remove(self.output_filepath_json)
