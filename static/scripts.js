@@ -26,6 +26,10 @@ const progress_range = document.getElementById("progressRange")
 const current_text = document.getElementById("currentText")
 
 // ============================================================
+// Options
+const auto_scroll = document.getElementById("autoScroll")
+
+// ============================================================
 // Full Text Display
 const textbox = document.getElementById("textbox");
 
@@ -143,6 +147,12 @@ function updateProgress() {
     handle_formatting(current_text, text)
     const active_text = document.getElementById("text_" + audio_index)
     active_text.classList.add("ACTIVE")
+    if (auto_scroll.checked) {
+        active_text.scrollIntoView({
+            block: "center",
+            behavior: 'smooth'
+       });
+    }
 }
 
 function updatePlaybackRate() {
@@ -252,7 +262,11 @@ audio_source.addEventListener('ended', function () {
     audio_source.play();
 });
 
-playback_rate.addEventListener('change', function () {
+// playback_rate.addEventListener('change', function () {
+    // updatePlaybackRate();
+// });
+
+playback_rate.addEventListener('input', function () {
     updatePlaybackRate();
 });
 

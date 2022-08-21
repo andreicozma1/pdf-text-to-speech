@@ -21,12 +21,27 @@
 
         .box {
             border: 1px solid #ccc;
-            padding: .25em;
             margin: .25em;
         }
+        
+        #controlsBox {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            margin: auto;
+        }
 
-        audio {
-            width: 80%;
+        #controlsBox div {
+            margin: 1em;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        #controlsBox div * {
+            margin: 0;
+            display: inline;
+            padding-right: 0.5em;
         }
 
         #textbox {
@@ -36,9 +51,7 @@
         }
 
         .slider {
-            display: block;
             width: 80%;
-            margin: 1em auto;
         }
 
         .background {
@@ -182,42 +195,59 @@
         </div>
 
         <div id="controlsBox" class="lg CENTER box background">
-            <p>Progress: <span id="progressText"></span></p>
+            <p id="currentText"></p>
+            <hr class="dashed"/>
 
-            <button onclick="prev()">Prev</button>
-            <button onclick="toggle_play()" id="btn_play">Play</button>
-            <button onclick="next()">Next</button>
-            <input
-                    type="range"
-                    value=0
-                    min=0
-                    step=1
-                    class="slider"
-                    id="progressRange"
-                    onmouseup="seek_to_index(this.value)"
-                    onkeyup="seek_to_index(this.value)"
-            />
+            <div style="justify-content:center;">
+                <button onclick="prev()">Prev</button>
+                <button onclick="toggle_play()" id="btn_play">Play</button>
+                <button onclick="next()">Next</button>
+            </div>
 
-            <p>Playback Rate: <span id="playbackRateText"></span></p>
-            <input
-                    type="range"
-                    value=1.2
-                    min=0.25
-                    max=4
-                    step="0.05"
-                    class="slider"
-                    id="playbackRate"
-            />
+            <div>
+                <p>Progress: <span id="progressText"></span></p>
 
+                <input
+                        type="range"
+                        value=0
+                        min=0
+                        step=1
+                        class="slider"
+                        id="progressRange"
+                        onmouseup="seek_to_index(this.value)"
+                        onkeyup="seek_to_index(this.value)"
+                />
+            </div>
+            
+            <div>
+                <p>Playback Rate: <span id="playbackRateText"></span></p>
+                <input
+                        type="range"
+                        value=1.2
+                        min=0.25
+                        max=4
+                        step="0.05"
+                        class="slider"
+                        id="playbackRate"
+                />
+            </div>
+
+            <div>
+                <div>
+                    <input type="checkbox" id="autoScroll" checked/>
+                    <p>AutoScroll</p>
+                </div>
+            </div>
             <audio src="" type="audio/wav" id="audio_source">
                 Your browser does not support the audio element.
             </audio>
         </div>
 
+
         <hr class="dashed"/>
-        <p id="currentText"></p>
-        <hr class="dashed"/>
+
         <div id="textbox" class="lg CENTER"/>
+
 
         <script>
             const data = {{ data | tojson | safe}};
