@@ -162,10 +162,8 @@ class PDF_TTS:
             return None
 
         if self.remove_urls_only_lines:
-            # remove all digits
-            ntxt = re.sub("\d", "", text_stripped)
-            # remove all symbols
-            ntxt = re.sub("[^a-zA-Z0-9 ]", "", ntxt)
+            # remove all digits, symbols, and whitespace
+            ntxt = re.sub("[^a-zA-Z]", "", text)
             if (ntxt.startswith("http") or
                     ntxt.startswith("www")):
                 self.removals['urls_only_lines'].append(text)
