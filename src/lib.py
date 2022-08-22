@@ -220,32 +220,44 @@ class PDF_TTS:
                 blocks = page.extractBLOCKS()
 
                 for b in blocks:
-                    ###############
-                    ## VERSION 1 ##
-                    ###############
-                    # txt = b[4].strip()
-                    # txt = " ".join(txt.split("\n")).strip()
-                    # txt = self.filter(txt)
-                    # if txt is not None:
-                    #     text = txt + "\n\n"
-                    #     text = text.replace("  ", " ")
-                    #     text = text.replace("- ", "")
-                    #     text = text.replace(" , ", ", ")
-                    #     text = text.replace(" .", ".")
-                    #     text_buf.append(text)
-
-                    ###############
-                    ## VERSION 2 ##
-                    ###############
                     txt = b[4]
-                    f.write(txt)
                     # txt = txt.strip()
                     txt = txt.replace("\n ", "\n")
+                    f.write(txt)
+                    f.write("-" * 80 + "\n")
 
-                    doublesplit = txt.split("\n\n")
-                    for txt in doublesplit:
-                        txt = " ".join(txt.split("\n"))
-                        txt = self.filter(txt)
+                    sections = txt.split("\n\n")
+                    paragraphs = []
+                    for s in sections:
+                        #################
+                        # MODE 1
+                        #################
+                        txt_split = s.split("\n")
+                        paragraphs.append(" ".join(txt_split))
+                        
+                        #################
+                        # MODE 2
+                        #################
+                        # print(txt_split)
+                        # minimum = None
+                        # start = 0
+                        # for i in range(len(txt_split)):
+                        #     p = txt_split[i]
+                        #     if minimum is None:
+                        #         minimum = len(p)
+                        #     print(f"\t {p} ({minimum})")
+                        #     if i >= len(txt_split) - 1 or (p.endswith('.') and (len(txt_split[i+1]) != 0 and txt_split[i + 1][0].isupper()) and len(p) < minimum):
+                        #         paragraphs.append(" ".join(txt_split[start : i + 1]))                           
+                        #         start = i + 1
+                        #         minimum = None
+                        #         print("\t Appended")
+                        #         continue
+                                
+                        #     minimum = (minimum + len(p)) / 2
+                        # print(f"\t {start}")
+                        
+                    for p in paragraphs:
+                        txt = self.filter(p)
                         if txt is not None:
                             txt = txt + "\n\n"
                             txt = txt.replace("  ", " ")
