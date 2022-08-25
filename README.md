@@ -6,7 +6,8 @@ retain information when it is presented through multiple channels (e.g. visual +
 Start saving precious time and energy by converting your documents to speech, and then listen to them like an audiobook
 at your own pace.
 
-## Installing Dependencies:
+## Installation
+### Dependencies:
 
 Python 3.X is required with the following modules:
 - Flask (for Web Interface + API)
@@ -19,7 +20,7 @@ Install everything with:
 pip3 install -r requirements.txt
 ```
 
-## Setting up Google TTS:
+### Setting up Google TTS:
 
 Follow the instructions here: https://cloud.google.com/text-to-speech/docs/before-you-begin
 
