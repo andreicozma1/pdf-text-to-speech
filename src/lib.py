@@ -189,14 +189,6 @@ class PDF_TTS:
         if self.skip_braces:
             text = re.sub(f"\{{{re_pattern}\}}", "", text)
 
-        # if self.remove_symbols_only_lines and all(i in string.punctuation for i in text.replace(" ", "")):
-        #     self.removals['symbols_only_lines'].append(text)
-        #     return None
-
-        # if self.remove_digits_only_lines and all(i.isdigit() for i in text.replace(" ", "")):
-        #     self.removals['digits_only_lines'].append(text)
-        #     return None
-
         if self.remove_symbols_and_digits_only_lines:
             if all((i in string.punctuation or i.isdigit()) for i in ntxt):
                 self.removals['symbols_and_digits_only_lines'].append(text)
