@@ -6,7 +6,8 @@ retain information when it is presented through multiple channels (e.g. visual +
 Start saving precious time and energy by converting your documents to speech, and then listen to them like an audiobook
 at your own pace.
 
-## Installing Dependencies:
+## Installation
+### Dependencies:
 
 Python 3.X is required with the following modules:
 - Flask (for Web Interface + API)
@@ -14,14 +15,14 @@ Python 3.X is required with the following modules:
 - Google Cloud Text-To-Speech API (for TTS Functionality)
 - difflib (for PDF text filtering functionality [WIP])
 
-Install everything with:
+First, install all Python dependencies with:
 ```bash
 pip3 install -r requirements.txt
 ```
 
-## Setting up Google TTS:
+### Setting up Google TTS:
 
-Follow the instructions here: https://cloud.google.com/text-to-speech/docs/before-you-begin
+Next, follow the instructions here: https://cloud.google.com/text-to-speech/docs/before-you-begin
 
 NOTE: You must have `GOOGLE_APPLICATION_CREDENTIALS` variable set in your environment for `Google TTS` to work.
 
