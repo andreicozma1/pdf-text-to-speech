@@ -32,33 +32,60 @@ class PDF_TTS:
         self.output_filepath_pkl = f"{output_filepath}.pkl"
         self.output_filepath_json = f"{output_filepath}.json"
 
+        ########################################################################
+        # Google TTS Configuration
+        ########################################################################
+        # Change the speaking rate for Google TTS (Default: 1)
+        # (This usually does not need to be changed as it is controlled afterwards through the Web interface)
         self.speaking_rate = 1
+        # Change pitch of Google TTS Audio (Default: 0.0)
         self.pitch = 0.0
+        # Change language code for Google TTS (Default: en-US)
         self.language_code = "en-US"
+        ########################################################################
 
+        ########################################################################
         # Validation of configuration options
+        ########################################################################
         if self.speaking_rate < 0.25 or self.speaking_rate > 4.0:
             raise Exception(
                 "Invalid speaking rate, must be between 0.25 and 4.0")
 
         if self.pitch < -20 or self.pitch > 20:
             raise Exception("Invalid pitch, must be between -20 and 20")
+        ########################################################################
 
-        self.remove_majority_non_ascii_lines = True
-        self.remove_majority_non_ascii_ratio = 0.85
-        self.remove_symbols_and_digits_only_lines = True
-        self.remove_symbols_only_lines = True
-        self.remove_digits_only_lines = True
-        self.remove_urls_only_lines = True
-
+        ########################################################################
+        # PDF Processing Configuration
+        ########################################################################
+        # Remove parentheses/brackets/braces and contents in between from processed text
         self.skip_parentheses = True
         self.skip_brackets = True
         self.skip_braces = True
+        # For any of the above only remove if there are only digits inside
+        # (Useful for removing in-text references/citations in research papers)
         self.skip_only_if_digits_inside = True
+        
+        ########################################################################
+        # Remove line while processing text depending on the ratio of ascii to non-ascii characters
+        # (Useful for removing remnants of weirdly encoded PDF tables and charts, etc)
+        self.remove_majority_non_ascii_lines = True
+        self.remove_majority_non_ascii_ratio = 0.85
+        # Remove lines that contain only symbols and digits
+        self.remove_symbols_and_digits_only_lines = True
+        # Remove lines that contain only symbols, digits, or URLs
+        self.remove_symbols_only_lines = True
+        self.remove_digits_only_lines = True
+        self.remove_urls_only_lines = True
+        ########################################################################
 
+        ########################################################################
+        # TTS Audio Configuration
         sampleRate = 24000
         bitsPerSample = 16
         channels = 1
+        ########################################################################
+        
         self.wav_header = self.genWavHeader(
             sampleRate, bitsPerSample, channels)
 
