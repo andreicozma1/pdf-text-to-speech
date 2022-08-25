@@ -121,13 +121,6 @@ class PDF_TTS:
         return fitz.Document(filename)
 
     def get_data(self):
-        if not os.path.isfile(self.output_filepath_json):
-            self.write_data()
-        with open(self.output_filepath_json, "r") as f:
-            data = json.load(f)
-        return data
-
-    def write_data(self):
         data = self.load_data()
         if self.doc and not self.doc.is_closed:
             data['info'].update({
@@ -320,7 +313,7 @@ class PDF_TTS:
                     os.remove(self.output_filepath_txt)
 
         self.save_text_audio_seqs(overwrite=False)
-        self.write_data()
+        self.get_data()
         self.doc.close()
 
     def stream_one(self, index):

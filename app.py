@@ -51,7 +51,10 @@ def rrmdir(path):
             os.remove(entry)
     os.rmdir(path)
 
-
+@app.before_request
+def make_session_permanent():
+    session.permanent = True
+    
 @app.route("/")
 def index():
     print("=" * 80)
@@ -153,6 +156,9 @@ def player(upload_id):
     elif query == 'remove_doc':
         try:
             rrmdir(upload_dir_path)
+            # Remove cookie for removed document
+            uploads.pop(upload_id)
+            session['uploads'] = uploads
         except Exception:
             traceback.print_exc()
             r = render_template("./index.html", id=upload_id, data=data, uploads=uploads,
