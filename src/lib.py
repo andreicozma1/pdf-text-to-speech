@@ -4,7 +4,7 @@ import json
 import os
 import pickle
 import traceback
-import fitz
+import fitz # NOTE: This is not from `fitz` package from PyPl, but rather `PyMuPDF``
 from google.cloud import texttospeech
 from tqdm import tqdm
 import re
