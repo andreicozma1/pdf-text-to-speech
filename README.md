@@ -15,7 +15,7 @@ Python 3.X is required with the following modules:
 - Google Cloud Text-To-Speech API (for TTS Functionality)
 - difflib (for PDF text filtering functionality [WIP])
 
-First, install everything with:
+First, install all Python dependencies with:
 ```bash
 pip3 install -r requirements.txt
 ```
