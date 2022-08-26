@@ -17,7 +17,7 @@ class PDFTextToSpeech:
     def __init__(self, pdf_file_path) -> None:
         self.input_file_path = pdf_file_path
         output_file_path_base = os.path.join(os.path.dirname(self.input_file_path),
-                                       os.path.basename(self.input_file_path).split('.')[0])
+                                             os.path.basename(self.input_file_path).split('.')[0])
         self.output_filepath_json = f"{output_file_path_base}.json"
 
         self.formatting = ["BOLD", "ITALIC",
@@ -34,7 +34,8 @@ class PDFTextToSpeech:
 
         data['info'].update({'file_name': os.path.basename(self.input_file_path),
                              'num_seqs': None if text_list is None else len(text_list),
-                             'num_seqs_cached': num_seqs_cached})
+                             'num_seqs_cached': num_seqs_cached,
+                             'is_processed': self.tts.text_audio_map is not None})
 
         data.update({
             'text_list': text_list,

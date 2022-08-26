@@ -1,264 +1,255 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>PDF TTS</title>
     <style>
-      div {
-          margin: 1em;
-      }
+        div {
+            margin: 1em;
+        }
 
-      p,
-      a {
-          font-size: 1.1em;
-      }
+        p,
+        a {
+            font-size: 1.1em;
+        }
 
-      a:hover {
-          color: #7a7aff;
-          cursor: pointer;
-      }
+        a:hover {
+            color: #7a7aff;
+            cursor: pointer;
+        }
 
-      .box {
-          border: 1px solid #ccc;
-          margin: .25em;
-      }
+        .box {
+            border: 1px solid #ccc;
+            margin: .25em;
+        }
 
-      #controlsBox {
-          position: fixed;
-          bottom: 0;
-          left: 0;
-          right: 0;
-          margin: auto;
-      }
+        #controlsBox {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            margin: auto;
+        }
 
-      #controlsBox div {
-          display: flex;
-          justify-content: space-between;
-      }
+        #controlsBox div {
+            display: flex;
+            justify-content: space-between;
+        }
 
-      #controlsBox div * {
-          margin: 0.25em;
-          display: inline;
-      }
+        #controlsBox div * {
+            margin: 0.25em;
+            display: inline;
+        }
 
-      #textbox {
-          display: flex;
-          flex-direction: column;
-          text-align: left;
-          margin-bottom: 15em;
-      }
+        #textbox {
+            display: flex;
+            flex-direction: column;
+            text-align: left;
+            margin-bottom: 15em;
+        }
 
-      .slider {
-          width: 50%;
-      }
+        .slider {
+            width: 50%;
+        }
 
-      .background {
-          background-color: #f5f5f5;
-      }
+        .background {
+            background-color: #f5f5f5;
+        }
 
-      .background-dark {
-          background-color: #e5e5e5;
-      }
+        .background-dark {
+            background-color: #e5e5e5;
+        }
 
-      .sm {
-          width: 30%
-      }
+        .sm {
+            width: 30%
+        }
 
-      .md {
-          width: 60%;
-      }
+        .md {
+            width: 60%;
+        }
 
-      .lg {
-          width: 80%;
-      }
+        .lg {
+            width: 80%;
+        }
 
-      .xl {
-          width: 100%;
-      }
+        .xl {
+            width: 100%;
+        }
 
-      {# FORMATTING OF TEXT AREAS #}
-      .ACTIVE {
-          color: #0000ff;
-          cursor: pointer;
-      }
+        {# FORMATTING OF TEXT AREAS #}
+        .ACTIVE {
+            color: #0000ff;
+            cursor: pointer;
+        }
 
-      .CENTER {
-          text-align: center;
-          margin-left: auto;
-          margin-right: auto;
-      }
+        .CENTER {
+            text-align: center;
+            margin-left: auto;
+            margin-right: auto;
+        }
 
-      .BOLD {
-          font-weight: bold;
-      }
+        .BOLD {
+            font-weight: bold;
+        }
 
-      .ITALIC {
-          font-style: italic;
-      }
+        .ITALIC {
+            font-style: italic;
+        }
 
-      .UNDERLINE {
-          text-decoration: underline;
-      }
+        .UNDERLINE {
+            text-decoration: underline;
+        }
 
-      .STRIKETHROUGH {
-          text-decoration: line-through;
-      }
+        .STRIKETHROUGH {
+            text-decoration: line-through;
+        }
     </style>
-  </head>
-  <body>
-    <div class="CENTER">
-      <div class="box background-dark">
+</head>
+<body>
+<div class="CENTER">
+    <div class="box background-dark">
         <h1>PDF Text-To-Speech</h1>
-      </div>
+    </div>
 
-      <div>
+    <div>
         {% if message is defined and message %}
-        <p>{{ message }}</p>
+            <p>{{ message }}</p>
         {% else %}
-        <h2>Upload New Document</h2>
+            <h2>Upload New Document</h2>
         {% endif %}
         <form
-          action="http://localhost:5000/upload"
-          method="POST"
-          enctype="multipart/form-data"
-          class="center"
-          style="margin: 1em"
+                action="http://localhost:5000/upload"
+                method="POST"
+                enctype="multipart/form-data"
+                class="center"
+                style="margin: 1em"
         >
-          <input type="file" name="file" />
-          <input type="submit" />
+            <input type="file" name="file"/>
+            <input type="submit"/>
         </form>
-      </div>
+    </div>
 
-      {% if uploads is defined and uploads %}
-      <div class="box background lg CENTER">
-        <h2>Recent Documents</h2>
-        <div id="uploads_list"></div>
-        <p class="ITALIC">
-          Note: Clearing your browser session will empty this list.
+    {% if uploads is defined and uploads %}
+        <div class="box background lg CENTER">
+            <h2>Recent Documents</h2>
+            <div id="uploads_list"></div>
+            <p class="ITALIC">
+                Note: Clearing your browser session will empty this list.
+            </p>
+            <p class="ITALIC">
+                Please save the document URLs if you wish to view them elsewhere.
+            </p>
+
+            <script>
+                const uploads = {{ uploads | tojson | safe }};
+                console.log(uploads)
+            </script>
+            <script src="{{ url_for('static', filename='uploads.js') }}"></script>
+        </div>
+    {% endif %} {% if data is defined and data and id is defined and id %}
+    <hr class="dashed"/>
+
+    <h2>Current Document</h2>
+    <p>Name: <b>{{ data.info.file_name }}</b></p>
+    <p>Hash: <b>{{ id }}</b></p>
+
+    {% if data.info.last_processed %}
+        <p>Last Processed: <b>{{ data.info.last_processed }}</b></p>
+    {% else %}
+        <p>Last Processed: <b>Never</b></p>
+    {% endif %}
+
+    {% if data.info.is_processed %}
+        <p>Document successfully processed!</p>
+    {% else %}
+        <i><b><p>Please process document to continue...</p></b></i>
+    {% endif %} {% if data.info.is_processed %}
+        <p>
+            <b>{{ data.info.num_seqs_cached }}</b> text-audio sequences already
+            cached out of <b>{{ data.info.num_seqs }}</b> total
         </p>
-        <p class="ITALIC">
-          Please save the document URLs if you wish to view them elsewhere.
-        </p>
-
-        <script>
-          const uploads = {{ uploads | tojson | safe }};
-          console.log(uploads)
-        </script>
-        <script src="{{ url_for('static', filename='uploads.js') }}"></script>
-      </div>
-      {% endif %} {% if data is defined and data and id is defined and id %}
-      <hr class="dashed" />
-
-      <h2>Current Document</h2>
-      <p>Name: <b>{{ data.info.file_name }}</b></p>
-      <p>Hash: <b>{{ id }}</b></p>
-
-      {% if data.info.last_processed %}
-      <p>Last Processed: <b>{{ data.info.last_processed }}</b></p>
-      {% else %}
-      <p>Last Processed: <b>Never</b></p>
-      {% endif %} {% if data.info.is_processed %}
-      <p>Document successfully processed!</p>
-      {% else %}
-      <i
-        ><b><p>Please process document to continue...</p></b></i
-      >
-      {% endif %} {% if data.info.is_processed %}
-      <p>
-        <b>{{ data.info.page_count }} total pages</b> with
-        <b>{{ data.info.num_seqs_cached }}</b> text-audio sequences already
-        cached out of <b>{{ data.info.num_seqs }}</b> total
-      </p>
-      {% endif %} {#
-      <p>Has Links? <b>{{ data.info.has_links }}</b></p>
-      #} {#
-      <p>Has Annotations? <b>{{ data.info.has_annots }}</b></p>
-      #} {#
-      <p>Is Encrypted? <b>{{ data.info.is_encrypted }}</b></p>
-      #} {#
-      <p>Is Password Protected? <b>{{ data.info.is_password_protected }}</b></p>
-      #}
-      <div>
+    {% endif %}
+    <div>
         <button onclick="process()" id="btn_process">Process</button>
         <button onclick="clean()" id="btn_clean">Clean</button>
-      </div>
+    </div>
 
-      <div>
+    <div>
         <button onclick="download_pdf()" id="btn_download_pdf">
-          Download PDF
+            Download PDF
         </button>
         <button onclick="download_txt()" id="btn_download_txt">
-          Download TXT
+            Download TXT
         </button>
-      </div>
+    </div>
 
-      <div>
+    <div>
         <button onclick="remove()" id="btn_remove">Remove Document</button>
-      </div>
+    </div>
 
-      <div id="controlsBox" class="lg CENTER box background">
+    <div id="controlsBox" class="lg CENTER box background">
         <div>
-          <p id="currentText"></p>
+            <p id="currentText"></p>
         </div>
 
-        <hr class="dashed" />
+        <hr class="dashed"/>
 
         <div>
-          <p>Progress: <span id="progressText"></span></p>
+            <p>Progress: <span id="progressText"></span></p>
 
-          <input
-            type="range"
-            value="0"
-            min="0"
-            step="1"
-            class="slider"
-            id="progressRange"
-            onmouseup="seek_to_index(this.value)"
-            onkeyup="seek_to_index(this.value)"
-          />
+            <input
+                    type="range"
+                    value="0"
+                    min="0"
+                    step="1"
+                    class="slider"
+                    id="progressRange"
+                    onmouseup="seek_to_index(this.value)"
+                    onkeyup="seek_to_index(this.value)"
+            />
 
-          <div>
-            <button onclick="prev()">Prev</button>
-            <button onclick="toggle_play()" id="btn_play">Play</button>
-            <button onclick="next()">Next</button>
-          </div>
-        </div>
-
-        <div>
-          <p>Playback Rate: <span id="playbackRateText"></span></p>
-          <input
-            type="range"
-            value="1.2"
-            min="0.2"
-            max="4.0"
-            step="0.1"
-            class="slider"
-            id="playbackRate"
-          />
-          <div>
-            <button id="rateSlower">Slower</button>
-            <button id="rateDefault">Default</button>
-            <button id="rateFaster">Faster</button>
-          </div>
+            <div>
+                <button onclick="prev()">Prev</button>
+                <button onclick="toggle_play()" id="btn_play">Play</button>
+                <button onclick="next()">Next</button>
+            </div>
         </div>
 
         <div>
-          <div>
-            <input type="checkbox" id="autoScroll" checked />
-            <p>AutoScroll</p>
-          </div>
+            <p>Playback Rate: <span id="playbackRateText"></span></p>
+            <input
+                    type="range"
+                    value="1.2"
+                    min="0.2"
+                    max="4.0"
+                    step="0.1"
+                    class="slider"
+                    id="playbackRate"
+            />
+            <div>
+                <button id="rateSlower">Slower</button>
+                <button id="rateDefault">Default</button>
+                <button id="rateFaster">Faster</button>
+            </div>
+        </div>
+
+        <div>
+            <div>
+                <input type="checkbox" id="autoScroll" checked/>
+                <p>AutoScroll</p>
+            </div>
         </div>
         <audio src="" type="audio/wav" id="audio_source">
-          Your browser does not support the audio element.
+            Your browser does not support the audio element.
         </audio>
-      </div>
+    </div>
 
-      <hr class="dashed" />
+    <hr class="dashed"/>
 
-      <div id="textbox" class="lg CENTER" />
+    <div id="textbox" class="lg CENTER"/>
 
-      <script>
+    <script>
         const data = {{ data | tojson | safe}};
         if (!data) {
             throw new Error("API returned no `data` for the requested document.");
@@ -275,10 +266,10 @@
             alert(dialog)
         }
         console.log(dialog)
-      </script>
+    </script>
 
-      <script src="{{ url_for('static', filename='scripts.js') }}"></script>
-      {% endif %}
-    </div>
-  </body>
+    <script src="{{ url_for('static', filename='scripts.js') }}"></script>
+{% endif %}
+</div>
+</body>
 </html>
