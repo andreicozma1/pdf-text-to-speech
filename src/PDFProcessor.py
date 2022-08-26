@@ -138,19 +138,3 @@ class PDFProcessor:
             os.remove(self.output_file_path_txt_processed)
         if os.path.exists(self.output_file_path_txt_original):
             os.remove(self.output_file_path_txt_original)
-
-
-if __name__ == '__main__':
-    # Get arguments with -i being required and -o being optional
-    # Use argparse to parse the arguments
-    args = argparse.ArgumentParser(description='Process PDF files')
-    args.add_argument('-i', '--input', help='Input file', required=True)
-    args.add_argument('-o', '--output', help='Output file', required=False)
-    args.add_argument('-d', '--debug', help='Debug mode', required=False, action='store_true')
-
-    # Parse the arguments
-    args = args.parse_args()
-
-    pp = PDFProcessor(args.input)
-    text = pp.extract_text()
-    print(text)
