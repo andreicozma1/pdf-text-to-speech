@@ -4,7 +4,7 @@ from flask import Flask, render_template, request, make_response, \
     redirect, url_for, send_from_directory, Response, session
 import secrets
 from dotenv import load_dotenv
-from src.lib import PDF_TTS
+from src.PDFTextToSpeech import PDFTextToSpeech
 from pathlib import Path
 import hashlib
 
@@ -92,7 +92,7 @@ def player(upload_id):
     fname_pdf = pdf_files[0]
     fname_txt = fname_pdf.replace('.pdf', '.txt')
     fname_txt_processed = fname_txt.replace('.txt', '_processed.txt')
-    p = PDF_TTS(os.path.join(upload_dir_path, fname_pdf))
+    p = PDFTextToSpeech(os.path.join(upload_dir_path, fname_pdf))
 
     try:
         data = p.get_data()
@@ -140,7 +140,7 @@ def player(upload_id):
                                 dialog="Required integer `index` query param not specified")
             return r
         stream_index = int(stream_index)
-        return Response(p.stream_one(stream_index), mimetype="audio/x-wav")
+        return Response(p.stream_index(stream_index), mimetype="audio/x-wav")
     elif query == 'download_pdf':
         if not os.path.exists(os.path.join(upload_dir_path, fname_pdf)):
             r = render_template("./index.html", id=upload_id, data=data, uploads=uploads,
