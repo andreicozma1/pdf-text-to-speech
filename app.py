@@ -51,10 +51,12 @@ def rrmdir(path):
             os.remove(entry)
     os.rmdir(path)
 
+
 @app.before_request
 def make_session_permanent():
     session.permanent = True
-    
+
+
 @app.route("/")
 def index():
     print("=" * 80)
@@ -171,35 +173,40 @@ def player(upload_id):
 def upload():
     if request.method != "POST":
         return
+    print('-' * 80)
+    print("Upload:")
+
     if 'file' not in request.files:
         r = render_template("./index.html", message='Upload file not found')
         return r
 
-    f = request.files["file"]
+    files_list = request.files.getlist('file')
+    print(f"Files: {files_list}")
+    print(f"Length: {len(files_list)}")
 
-    if f.filename == '':
-        r = render_template("./index.html", message="Upload file not selected")
-        return r
+    upload_id = None
+    for f in files_list:
+        if f.filename == '':
+            r = render_template("./index.html", message="Upload file not selected")
+            return r
 
-    if f and allowed_file(f.filename):
-        # upload_id = secrets.token_urlsafe(36)
-        filebytes = f.read()
-        upload_id = hashlib.md5(filebytes).hexdigest()
+        if f and allowed_file(f.filename):
+            # upload_id = secrets.token_urlsafe(36)
+            filebytes = f.read()
+            upload_id = hashlib.md5(filebytes).hexdigest()
 
-        f_save_path = os.path.join(app.config['UPLOAD_FOLDER'], upload_id)
-        if not os.path.exists(f_save_path):
-            os.makedirs(f_save_path)
-            f.seek(0)
-            f.save(os.path.join(app.config['UPLOAD_FOLDER'], upload_id, f.filename))
+            f_save_path = os.path.join(app.config['UPLOAD_FOLDER'], upload_id)
+            if not os.path.exists(f_save_path):
+                os.makedirs(f_save_path)
+                f.seek(0)
+                f.save(os.path.join(app.config['UPLOAD_FOLDER'], upload_id, f.filename))
 
-        current_uploads = session.get('uploads', {})
-        current_uploads[upload_id] = f.filename
-        session['uploads'] = current_uploads
-        session.permanent = True
-        return make_response(redirect(url_for('player', upload_id=upload_id, action='process')))
-    else:
-        r = render_template("./index.html", message="Upload file not allowed")
-        return r
+            current_uploads = session.get('uploads', {})
+            current_uploads[upload_id] = f.filename
+            session['uploads'] = current_uploads
+            session.permanent = True
+
+    return make_response(redirect(url_for('player', upload_id=upload_id, action='process')))
 
 
 if __name__ == "__main__":
